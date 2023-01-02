@@ -1,17 +1,5 @@
 from config import * 
-from scale import Scale 
-
-def make_scale(key, dim):
-
-    def forward_fn(x, sign):
-        net = Scale() 
-        return net(x, sign)
-
-    x = jax.random.normal(key, (dim, ))    
-    network = hk.transform(forward_fn)
-    network = hk.without_apply_rng(network)
-    params = network.init(key, x, 1)
-    return params, network.apply
+from scale import make_scale
 
 def test_reversibility():
     

@@ -73,8 +73,6 @@ def make_vec_field_net(rng, n, spatial_dim, ch=512, num_layers=2, symmetry=False
         input = jnp.concatenate((x,t.reshape(1)))
         return model(input)
 
-    #return vec_field_net
-
     net = hk.without_apply_rng(hk.transform(vec_field_net))
 
     params = net.init(rng, jnp.ones((n*spatial_dim,)), jnp.ones((1,)))
@@ -103,23 +101,3 @@ def make_transformer(key, n, dim, num_heads, num_layers, key_sizes):
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)
     return params, network.apply 
-
-if __name__ == '__main__':
-    from jax.config import config
-    config.update("jax_enable_x64", True)
-
-    n = 6
-    spatial_dim = 2
-
-    params, vec_field_net = make_vec_field_net(random.PRNGKey(42), n, spatial_dim, symmetry=False)
-
-    x = random.normal(random.PRNGKey(41), (n*spatial_dim,))
-    t = random.normal(random.PRNGKey(40), (1,))
-
-    import time
-    start = time.time()
-    v = vec_field_net(params,  x, t)
-    end = time.time()
-    print(end - start)
-    print(v)
-    print(vec_field_net(jax.tree_util.tree_map(lambda x: x -0.01, params),  x, t))

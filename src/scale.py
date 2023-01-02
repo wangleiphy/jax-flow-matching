@@ -19,3 +19,15 @@ class Scale(hk.Module):
         q = q*jnp.exp(sign*logscale)
 
         return jnp.concatenate([p, q]), jnp.sum(sign*logscale)
+
+def make_scale(key, dim):
+
+    def forward_fn(x, sign):
+        net = Scale() 
+        return net(x, sign)
+
+    x = jax.random.normal(key, (dim,))    
+    network = hk.transform(forward_fn)
+    network = hk.without_apply_rng(network)
+    params = network.init(key, x, 1)
+    return params, network.apply

@@ -1,21 +1,31 @@
+import jax
 import jax.numpy as jnp
-from jax import vmap
 from functools import partial
 
-@partial(vmap, in_axes=(0, None, None))
-def energy_fun(x, n, dim):
-    i, j = jnp.triu_indices(n, k=1)
-    r_ee = jnp.linalg.norm((jnp.reshape(x, (n, 1, dim)) - jnp.reshape(x, (1, n, dim)))[i,j], axis=-1)
-    v_ee = jnp.sum(1/r_ee)
-    return jnp.sum(x**2) + v_ee
+def make_energy(n, dim):
 
-def make_free_energy(energy_fun, batched_sampler, logp_fun, n, dim, beta):
+    def kinetic(p):
+        return jnp.sum(p**2)/2
 
-    def free_energy(rng, params, sample_size):
+    def potential(q):
+        i, j = jnp.triu_indices(n, k=1)
+        r_ee = jnp.linalg.norm((jnp.reshape(q, (n, 1, dim)) - jnp.reshape(q, (1, n, dim)))[i,j], axis=-1)
+        v_ee = jnp.sum(1/r_ee)
+        return jnp.sum(q**2) + v_ee
+    
+    def energy(x):
+        assert x.size == 2*n*dim
+        p, q = jnp.split(x, 2)
+        return kinetic(p) + potential(q)
+
+    return jax.vmap(energy), jax.vmap(potential)
+
+def make_free_energy(energy_fun, sampler, n, dim, beta):
+
+    def free_energy(key, params, batchsize):
         
-        x = batched_sampler(rng, params, sample_size)
-        e = energy_fun(x, n, dim)
-        logp = logp_fun(params, x)
+        x, logp = sampler(key, params, batchsize)
+        e = energy_fun(x)
 
         amount = jnp.exp(- beta * e - logp)
         z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
