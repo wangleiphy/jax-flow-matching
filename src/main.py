@@ -63,7 +63,7 @@ if __name__ == '__main__':
     key, subkey = jax.random.split(key)
     if args.backflow:
         print ('construct backflow network')
-        v_params, vec_field_net = make_backflow(subkey, args.n, args.dim, [args.nhiddens]*args.nayers)
+        v_params, vec_field_net = make_backflow(subkey, args.n, args.dim, [args.nhiddens]*args.nlayers)
         modelname = 'backflow'
     elif args.transformer:
         print ('construct transformer network')
