@@ -1,4 +1,5 @@
 import jax 
+import jax.numpy as jnp
 import optax
 import haiku as hk
 
@@ -9,14 +10,16 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(key, num_epochs, init_params, data, lr):
+def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
     
-    @jax.jit
-    def step(key, i, state, x0, x1):
-        key, key_x0, key_t = random.split(key)
-        x0 = random.normal(key_x0, x1.shape)
-        t = random.uniform(key_t, (args.batchsize,))
+    assert (len(data)%batchsize==0)
 
+    @jax.jit
+    def step(key, i, state, x1):
+        key, subkey_x0, subkey_t = jax.random.split(key, 3)
+        x0 = jax.random.normal(subkey_x0, x1.shape)
+        t = jax.random.uniform(subkey_t, (batchsize,))
+        
         value, grad = value_and_grad(state.params, x0, x1, t)
 
         updates, opt_state = optimizer.update(grad, state.opt_state)
@@ -25,25 +28,24 @@ def train(key, num_epochs, init_params, data, lr):
         return TrainingState(params, opt_state), value
     
     optimizer = optax.adam(lr)
-    init_opt_state = optimizer.init(init_params)
-
-    state = TrainingState(init_params, init_opt_state)
+    init_opt_state = optimizer.init(params)
+    state = TrainingState(params, init_opt_state)
 
     itercount = itertools.count()
     for epoch in range(num_epochs):
-        key, subkey = jnp.random.split(key)
+        key, subkey = jax.random.split(key)
         data = jax.random.permutation(subkey, data)
 
         total_loss = 0.0
-        for batch_index in range(0, len(X1), args.batchsize):
-            q = data[batch_index:batch_index+args.batchsize]
+        for batch_index in range(0, len(data), batchsize):
+            q = data[batch_index:batch_index+batchsize]
             
             # put momentum to the first half
-            key, subkey = jnp.random.split(key)
+            key, subkey = jax.random.split(key)
             p = jax.random.normal(subkey, q.shape)
             x1 = jnp.concatenate([p, q], axis=1)
 
-            key, subkey = jnp.random.split(key)
+            key, subkey = jax.random.split(key)
             state, loss = step(subkey, 
                                next(itercount), 
                                state, 

@@ -15,16 +15,18 @@ def test_logp():
 
     scale_params, scale = make_scale(key, 2*n*dim)
     pt_params, vec_field_net = make_vec_field_net(key, n, dim)
+    
+    params = scale_params, pt_params
 
     pt = make_point_transformation(vec_field_net)
 
     sample, logp_fn = make_symplectic_flow(scale, pt, 2*n*dim, T)
     
     key, subkey = jax.random.split(key)
-    x, logp = sample(scale_params, pt_params, batchsize, subkey)
+    x, logp = sample(subkey, params, batchsize)
     assert (x.shape == (batchsize, 2*n*dim))
     assert (logp.shape == (batchsize, ))
 
-    logp_inference, _ = logp_fn(scale_params, pt_params, x)
+    logp_inference, _ = logp_fn(params, x)
     
     assert jnp.allclose(logp, logp_inference) 

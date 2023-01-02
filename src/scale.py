@@ -12,7 +12,6 @@ class Scale(hk.Module):
         super().__init__(name=name)
      
     def __call__(self, x, sign): 
-        assert jnp.abs(sign) == 1.0
         p, q = jnp.split(x, 2)
 
         logscale = hk.get_parameter("logscale", [x.shape[0]//2, ], init=hk.initializers.TruncatedNormal(stddev=0.01), dtype=x.dtype)
