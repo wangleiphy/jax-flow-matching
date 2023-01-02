@@ -8,7 +8,7 @@ def make_symplectic_flow(scale, pt, dim, beta):
     batched_scale = jax.vmap(scale, (None, 0, None), (0, 0))
     batched_pt = jax.vmap(pt, (None, 0, None), 0)
     
-    logp_fn = lambda x: -(0.5*x**2 + jnp.log(2 * np.pi/beta))
+    logp_fn = lambda x: -0.5*(x**2 + jnp.log(2 * np.pi/beta))
 
     def sample(key, params, batchsize):
         scale_params, pt_params = params 
