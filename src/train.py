@@ -10,7 +10,7 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
+def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, log_filename):
     
     assert (len(data)%batchsize==0)
 
@@ -31,6 +31,7 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
     init_opt_state = optimizer.init(params)
     state = TrainingState(params, init_opt_state)
 
+    f = open(log_filename, "w", buffering=1, newline="\n")
     itercount = itertools.count()
     for epoch in range(num_epochs):
         key, subkey = jax.random.split(key)
@@ -54,5 +55,6 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
             total_loss += loss
             counter += 1
     
-        print (epoch, total_loss/counter)
+        f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )
+    f.close()
     return state.params
