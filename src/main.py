@@ -81,7 +81,7 @@ if __name__ == '__main__':
     free_energy_fn = make_free_energy(energy_fn, sample_fn, args.n, args.dim, args.beta)
 
     loss = make_loss(scale_net, vec_field_net)
-    value_and_grad = jax.value_and_grad(loss, argnums=0)
+    value_and_grad = jax.value_and_grad(loss)
     
     print("\n========== Start training ==========")
 

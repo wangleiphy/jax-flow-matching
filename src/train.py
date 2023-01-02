@@ -37,6 +37,7 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
         data = jax.random.permutation(subkey, data)
 
         total_loss = 0.0
+        counter = 0 
         for batch_index in range(0, len(data), batchsize):
             q = data[batch_index:batch_index+batchsize]
             
@@ -51,6 +52,7 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr):
                                state, 
                                x1)
             total_loss += loss
+            counter += 1
     
-        print (epoch, total_loss/(batch_index+1.))
+        print (epoch, total_loss/counter)
     return state.params
