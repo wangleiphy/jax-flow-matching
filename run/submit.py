@@ -39,6 +39,8 @@ if __name__=='__main__':
                 args = {'beta':beta,
                         'n':n, 
                         'folder':resfolder,
+                        'nlayers':nlayers, 
+                        'nhiddens':nhiddens,
                         }
                 args[model] = ''
  

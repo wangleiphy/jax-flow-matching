@@ -11,6 +11,7 @@ from train import train
 from scale import make_scale
 from pt import make_point_transformation
 from flow import make_symplectic_flow
+from checkpoint import checkpoint
 
 import os
 import time
@@ -22,7 +23,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
     group = parser.add_argument_group('learning parameters')
-    group.add_argument('--epochs', type=int, default=200, help='')
+    group.add_argument('--epochs', type=int, default=500, help='')
     group.add_argument('--batchsize', type=int, default=4096, help='')
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
     group.add_argument("--folder", default="../data/", help="the folder to save data")
@@ -64,15 +65,15 @@ if __name__ == '__main__':
     if args.backflow:
         print ('construct backflow network')
         v_params, vec_field_net = make_backflow(subkey, args.n, args.dim, [args.nhiddens]*args.nlayers)
-        modelname = 'backflow'
+        modelname = 'backflow_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
     elif args.transformer:
         print ('construct transformer network')
         v_params, vec_field_net = make_transformer(subkey, args.n, args.dim, args.nheads, args.nlayers, args.keysize)
-        modelname = 'transformer'
+        modelname = 'transformer_nl_%d_nh_%d_nk_%d'%(args.nlayers, args.nheads, args.keysize)
     elif args.mlp:
         print ('construct mlp network')
         v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=False)
-        modelname = 'mlp'
+        modelname = 'mlp_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
     elif args.emlp:
         print ('construct emlp network')
         v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=True)
@@ -91,7 +92,8 @@ if __name__ == '__main__':
 
     print("\n========== Prepare logs ==========")
 
-    path = args.folder + modelname + "_n_%d_dim_%d_beta_%g" % (args.n, args.dim, args.beta) 
+    path = args.folder + "n_%d_dim_%d_beta_%g" % (args.n, args.dim, args.beta) \
+                       + "_" + modelname
     os.makedirs(path, exist_ok=True)
     print("Create directory: %s" % path)
     log_filename = os.path.join(path, "data.txt")
@@ -100,7 +102,7 @@ if __name__ == '__main__':
 
     start = time.time()
     params = (s_params, v_params)
-    trained_params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, log_filename)
+    params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, log_filename)
     end = time.time()
     running_time = end - start
     print('training time: %.5f sec' %running_time)
@@ -109,7 +111,7 @@ if __name__ == '__main__':
 
     start = time.time()
     key, subkey = jax.random.split(key)
-    fe, fe_err, X_syn, vfe, vfe_err = free_energy_fn(subkey, trained_params, args.batchsize)
+    fe, fe_err, x, vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
     end = time.time()
     running_time = end - start
     print('free energy using trained model: %f ± %f' %(fe, fe_err))
@@ -123,8 +125,10 @@ if __name__ == '__main__':
     f.write( ("#vfe: %.6f  %.6f" + "\n") % (vfe, vfe_err) )
     f.close()
 
-    #ckpt = {"params": params 
-    #       }
-    #ckpt_filename = os.path.join(path, "epoch_%06d.pkl" %(i))
-    #checkpoint.save_data(ckpt, ckpt_filename)
-    #print("Save checkpoint file: %s" % ckpt_filename)
+    ckpt = {"params": params,
+             "x": x,
+             "w": omega
+           }
+    ckpt_filename = os.path.join(path, "data.pkl")
+    checkpoint.save_data(ckpt, ckpt_filename)
+    print("Save checkpoint file: %s" % ckpt_filename)

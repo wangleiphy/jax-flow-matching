@@ -8,7 +8,9 @@ nickname = 'firsttry'
 nlist = [6]
 betalist = [10.0]
 dim = 2
-model = 'transformer'
+model = 'backflow'
+nlayers = 2 
+nhiddens = 512
 
 ###############################
 prog = '../src/main.py'
