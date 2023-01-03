@@ -26,7 +26,10 @@ if __name__ == '__main__':
     group.add_argument('--epochs', type=int, default=500, help='')
     group.add_argument('--batchsize', type=int, default=4096, help='')
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+
+    group = parser.add_argument_group('filesystem')
     group.add_argument("--folder", default="../data/", help="the folder to save data")
+    group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
     group = parser.add_argument_group('datasets')
     group.add_argument('--datasize', type=int, default=102400, help='')
@@ -50,15 +53,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    print("\n========== Generate training dataset ==========")
-
-    start = time.time()
-    energy_fn, potential_fn = make_energy(args.n, args.dim)
-    logp_fn = lambda q: -args.beta * potential_fn(q)
-    X1 = sample_target(key, args.datasize, args.n, args.dim, logp_fn)
-    end = time.time()
-    running_time = end - start
-    print('training set sampling time: %.5f sec' %running_time)
+    energy_fn, _ = make_energy(args.n, args.dim)
 
     print("\n========== Build networks ==========")
     key, subkey = jax.random.split(key)
@@ -97,11 +92,30 @@ if __name__ == '__main__':
     os.makedirs(path, exist_ok=True)
     print("Create directory: %s" % path)
 
-    print("\n========== Start training ==========")
+    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path or path)
+
+    if ckpt_filename is not None:
+        print("Load checkpoint file: %s, epoch finished: %g" %(ckpt_filename, epoch_finished))
+        ckpt = checkpoint.load_data(ckpt_filename)
+        params = ckpt["params"]
+    else:
+        raise ValueError("no checkpoint found")
+
+    print("\n========== Start inference ==========")
 
     start = time.time()
-    params = (s_params, v_params)
-    params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path)
+    key, subkey = jax.random.split(key)
+    fe, fe_err, x, vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
     end = time.time()
     running_time = end - start
-    print('training time: %.5f sec' %running_time)
+    print('free energy using trained model: %f ± %f' %(fe, fe_err))
+    print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
+    print('importance sampling time: %.5f sec' %running_time)
+    omega = jnp.exp(-params[0]['scale']['logscale'])
+    print ('omega:', jnp.sort(omega))
+
+    log_filename = os.path.join(args.restore_path or path, "epoch_%06d.txt" %(epoch_finished))
+    f = open(log_filename, "w", buffering=1, newline="\n")
+    f.write( ("#fe: %.6f  %.6f" + "\n") % (fe, fe_err) )
+    f.write( ("#vfe: %.6f  %.6f" + "\n") % (vfe, vfe_err) )
+    f.close()

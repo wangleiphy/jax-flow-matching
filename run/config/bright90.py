@@ -9,7 +9,7 @@ nlist = [6]
 betalist = [10.0]
 dim = 2
 model = 'backflow'
-nlayers = 2 
+nlayers = 4
 nhiddens = 512
 
 ###############################
