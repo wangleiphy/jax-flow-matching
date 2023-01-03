@@ -9,8 +9,9 @@ nlist = [6]
 betalist = [10.0]
 dim = 2
 model = 'backflow'
-nlayers = 4
-nhiddens = 512
+nlayers = 2
+nhiddens = 1024
+lr = 1e-3
 
 ###############################
 prog = '../src/main.py'

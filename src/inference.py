@@ -28,7 +28,6 @@ if __name__ == '__main__':
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 
     group = parser.add_argument_group('filesystem')
-    group.add_argument("--folder", default="../data/", help="the folder to save data")
     group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
     group = parser.add_argument_group('datasets')
@@ -87,13 +86,10 @@ if __name__ == '__main__':
 
     print("\n========== Prepare logs ==========")
 
-    path = args.folder + "n_%d_dim_%d_beta_%g" % (args.n, args.dim, args.beta) \
-                       + "_" + modelname
-    os.makedirs(path, exist_ok=True)
-    print("Create directory: %s" % path)
-
-    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path or path)
-
+    folder = os.path.dirname(args.restore_path+'/')
+    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path)
+    
+    print ('folder:', folder)
     if ckpt_filename is not None:
         print("Load checkpoint file: %s, epoch finished: %g" %(ckpt_filename, epoch_finished))
         ckpt = checkpoint.load_data(ckpt_filename)
@@ -115,7 +111,7 @@ if __name__ == '__main__':
     omega = jnp.sort(omega)
     print ('omega:', omega)
 
-    log_filename = os.path.join(path, "epoch_%06d.txt" %(epoch_finished))
+    log_filename = os.path.join(folder, "epoch_%06d.txt" %(epoch_finished))
     f = open(log_filename, "w", buffering=1, newline="\n")
     f.write(("%6d" + "    %.6f"*4 + "\n") % (epoch_finished, fe, fe_err, vfe, vfe_err) )
     f.close()
@@ -127,10 +123,13 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt 
     plot_range = [(-2, 2), (-2, 2)]
     n_bins = 101
-    print (x.shape)
     p, q = jnp.split(x, 2, axis=1)
-    print (q.shape)
+    p = p.reshape(-1, args.dim)
     q = q.reshape(-1, args.dim)
+    fig = plt.figure(figsize=(18, 6))
+    plt.subplot(1, 2, 1)
+    plt.hist2d(p[:, 0], p[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
+    plt.subplot(1, 2, 2)
     plt.hist2d(q[:, 0], q[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
-    fig_filename = os.path.join(path, "epoch_%06d.png" %(epoch_finished))
+    fig_filename = os.path.join(folder, "epoch_%06d.png" %(epoch_finished))
     plt.savefig(fig_filename)

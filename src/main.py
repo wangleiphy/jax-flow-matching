@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
     group = parser.add_argument_group('learning parameters')
-    group.add_argument('--epochs', type=int, default=500, help='')
+    group.add_argument('--epochs', type=int, default=10000, help='')
     group.add_argument('--batchsize', type=int, default=4096, help='')
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
     group.add_argument("--folder", default="../data/", help="the folder to save data")
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
     print("\n========== Prepare logs ==========")
 
-    path = args.folder + "n_%d_dim_%d_beta_%g" % (args.n, args.dim, args.beta) \
+    path = args.folder + "n_%d_dim_%d_beta_%g_lr_%g" % (args.n, args.dim, args.beta, args.lr) \
                        + "_" + modelname
     os.makedirs(path, exist_ok=True)
     print("Create directory: %s" % path)

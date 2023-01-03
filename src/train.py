@@ -36,7 +36,7 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path):
     log_filename = os.path.join(path, "data.txt")
     f = open(log_filename, "w", buffering=1, newline="\n")
     itercount = itertools.count()
-    for epoch in range(num_epochs):
+    for epoch in range(num_epochs+1):
         key, subkey = jax.random.split(key)
         data = jax.random.permutation(subkey, data)
 

@@ -41,6 +41,7 @@ if __name__=='__main__':
                         'folder':resfolder,
                         'nlayers':nlayers, 
                         'nhiddens':nhiddens,
+                        'lr':lr, 
                         }
                 args[model] = ''
  
