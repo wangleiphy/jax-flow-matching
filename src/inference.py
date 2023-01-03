@@ -5,7 +5,6 @@ config.update("jax_enable_x64", True)
 
 from data import sample_target
 from net import make_vec_field_net, make_backflow, make_transformer
-from loss import make_loss
 from energy import make_energy, make_free_energy
 from train import train
 from scale import make_scale
@@ -80,9 +79,6 @@ if __name__ == '__main__':
     pt = make_point_transformation(vec_field_net)
     sample_fn, _ = make_symplectic_flow(scale_net, pt, 2*args.n*args.dim, args.beta)
     free_energy_fn = make_free_energy(energy_fn, sample_fn, args.n, args.dim, args.beta)
-
-    loss = make_loss(scale_net, vec_field_net)
-    value_and_grad = jax.value_and_grad(loss)
 
     print("\n========== Prepare logs ==========")
 

@@ -83,11 +83,7 @@ if __name__ == '__main__':
 
     key, subkey = jax.random.split(key)
     s_params, scale_net = make_scale(subkey, 2*args.n*args.dim)
-    pt = make_point_transformation(vec_field_net)
-    sample_fn, _ = make_symplectic_flow(scale_net, pt, 2*args.n*args.dim, args.beta)
-    free_energy_fn = make_free_energy(energy_fn, sample_fn, args.n, args.dim, args.beta)
-
-    loss = make_loss(scale_net, vec_field_net)
+    loss = make_loss(scale_net, vec_field_net, args.beta)
     value_and_grad = jax.value_and_grad(loss)
 
     print("\n========== Prepare logs ==========")
