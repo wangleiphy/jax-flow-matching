@@ -112,10 +112,25 @@ if __name__ == '__main__':
     print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
     print('importance sampling time: %.5f sec' %running_time)
     omega = jnp.exp(-params[0]['scale']['logscale'])
-    print ('omega:', jnp.sort(omega))
+    omega = jnp.sort(omega)
+    print ('omega:', omega)
 
-    log_filename = os.path.join(args.restore_path or path, "epoch_%06d.txt" %(epoch_finished))
+    log_filename = os.path.join(path, "epoch_%06d.txt" %(epoch_finished))
     f = open(log_filename, "w", buffering=1, newline="\n")
-    f.write( ("#fe: %.6f  %.6f" + "\n") % (fe, fe_err) )
-    f.write( ("#vfe: %.6f  %.6f" + "\n") % (vfe, vfe_err) )
+    f.write(("%6d" + "    %.6f"*4 + "\n") % (epoch_finished, fe, fe_err, vfe, vfe_err) )
     f.close()
+    
+    ckpt["x"] = x 
+    ckpt["omega"] = omega
+    checkpoint.save_data(ckpt, ckpt_filename)
+
+    import matplotlib.pyplot as plt 
+    plot_range = [(-2, 2), (-2, 2)]
+    n_bins = 101
+    print (x.shape)
+    p, q = jnp.split(x, 2, axis=1)
+    print (q.shape)
+    q = q.reshape(-1, args.dim)
+    plt.hist2d(q[:, 0], q[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
+    fig_filename = os.path.join(path, "epoch_%06d.png" %(epoch_finished))
+    plt.savefig(fig_filename)

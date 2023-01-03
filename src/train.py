@@ -3,7 +3,6 @@ import jax.numpy as jnp
 import optax
 import haiku as hk
 import os
-import time
 from typing import NamedTuple
 import itertools
 
@@ -34,7 +33,6 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path):
     init_opt_state = optimizer.init(params)
     state = TrainingState(params, init_opt_state)
 
-    time_of_last_ckpt = time.time()
     log_filename = os.path.join(path, "data.txt")
     f = open(log_filename, "w", buffering=1, newline="\n")
     itercount = itertools.count()
@@ -62,13 +60,12 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path):
     
         f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )
 
-        if time.time() - time_of_last_ckpt > 600:
+        if epoch % 100 == 0:
             ckpt = {"params": state.params,
                    }
             ckpt_filename = os.path.join(path, "epoch_%06d.pkl" %(epoch))
             checkpoint.save_data(ckpt, ckpt_filename)
             print("Save checkpoint file: %s" % ckpt_filename)
-            time_of_last_ckpt = time.time()
 
     f.close()
     return state.params
