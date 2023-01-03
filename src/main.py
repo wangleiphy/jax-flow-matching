@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     start = time.time()
     params = (s_params, v_params)
-    params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path)
+    params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, args.beta)
     end = time.time()
     running_time = end - start
     print('training time: %.5f sec' %running_time)

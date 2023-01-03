@@ -29,9 +29,6 @@ if __name__ == '__main__':
     group = parser.add_argument_group('filesystem')
     group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
-    group = parser.add_argument_group('datasets')
-    group.add_argument('--datasize', type=int, default=102400, help='')
-
     group = parser.add_argument_group('network parameters')
     group.add_argument('--nhiddens', type=int, default=512, help='The channels in a middle layer')
     group.add_argument('--nlayers', type=int, default=4, help='The number of layers')
@@ -51,7 +48,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    energy_fn, _ = make_energy(args.n, args.dim)
+    energy_fn, potential_fn = make_energy(args.n, args.dim)
 
     print("\n========== Build networks ==========")
     key, subkey = jax.random.split(key)
@@ -82,7 +79,7 @@ if __name__ == '__main__':
 
     print("\n========== Prepare logs ==========")
 
-    folder = os.path.dirname(args.restore_path+'/')
+    folder = os.path.dirname(args.restore_path)
     ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path)
     
     print ('folder:', folder)
@@ -119,13 +116,30 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt 
     plot_range = [(-2, 2), (-2, 2)]
     n_bins = 101
+    fig = plt.figure(figsize=(18, 12))
+    
+    #sample target 
+    key, subkey = jax.random.split(key)
+    p = jax.random.normal(subkey, (args.batchsize, args.n*args.dim))
+    p = p / jnp.sqrt(args.beta)
+    key, subkey = jax.random.split(key)
+    logp_fn = lambda q: -args.beta * potential_fn(q)
+    q = sample_target(subkey, args.batchsize, args.n, args.dim, logp_fn)
+
+    p = p.reshape(-1, args.dim)
+    q = q.reshape(-1, args.dim)
+    plt.subplot(2, 2, 1)
+    plt.hist2d(p[:, 0], p[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
+    plt.subplot(2, 2, 2)
+    plt.hist2d(q[:, 0], q[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
+
     p, q = jnp.split(x, 2, axis=1)
     p = p.reshape(-1, args.dim)
     q = q.reshape(-1, args.dim)
-    fig = plt.figure(figsize=(18, 6))
-    plt.subplot(1, 2, 1)
+    plt.subplot(2, 2, 3)
     plt.hist2d(p[:, 0], p[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
-    plt.subplot(1, 2, 2)
+    plt.subplot(2, 2, 4)
     plt.hist2d(q[:, 0], q[:, 1], bins=n_bins, range=plot_range, density=True, cmap="inferno")
+
     fig_filename = os.path.join(folder, "epoch_%06d.png" %(epoch_finished))
     plt.savefig(fig_filename)

@@ -12,7 +12,7 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path):
+def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path, beta):
     
     assert (len(data)%batchsize==0)
 
@@ -48,6 +48,7 @@ def train(key, value_and_grad, num_epochs, batchsize, params, data, lr, path):
             # put momentum to the first half
             key, subkey = jax.random.split(key)
             p = jax.random.normal(subkey, q.shape)
+            p = p / jnp.sqrt(beta)
             x1 = jnp.concatenate([p, q], axis=1)
 
             key, subkey = jax.random.split(key)
