@@ -26,7 +26,9 @@ if __name__ == '__main__':
     group.add_argument('--epochs', type=int, default=10000, help='')
     group.add_argument('--batchsize', type=int, default=4096, help='')
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+
     group.add_argument("--folder", default="../data/", help="the folder to save data")
+    group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
     group = parser.add_argument_group('datasets')
     group.add_argument('--datasize', type=int, default=102400, help='')
@@ -93,10 +95,19 @@ if __name__ == '__main__':
     os.makedirs(path, exist_ok=True)
     print("Create directory: %s" % path)
 
+    print("\n========== Load checkpoint==========")
+    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path) 
+    if ckpt_filename is not None:
+        print("Load checkpoint file: %s, epoch finished: %g" %(ckpt_filename, epoch_finished))
+        ckpt = checkpoint.load_data(ckpt_filename)
+        params = ckpt["params"]
+    else:
+        print("No checkpoint file found. Start from scratch.")
+        params = (s_params, v_params)
+
     print("\n========== Start training ==========")
 
     start = time.time()
-    params = (s_params, v_params)
     params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, args.beta)
     end = time.time()
     running_time = end - start
