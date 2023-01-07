@@ -6,13 +6,13 @@ from jax.example_libraries.stax import serial, Dense, Sigmoid
 
 def make_vec_field_net(rng, n, dim):
     net_init, net_apply = serial(Dense(512), Sigmoid, Dense(512), Sigmoid, Dense(n*dim))
-    in_shape = (-1, n*dim)
+    in_shape = (-1, n*dim+1)
     _, net_params = net_init(rng, in_shape)
 
-    def net(params, x):
-        return net_apply(params, x)
+    def net_with_t(params, x, t):
+        return net_apply(params, jnp.concatenate((x,t.reshape(1))))
     
-    return net_params, net
+    return net_params, net_with_t
 
 def test_reversibility():
 

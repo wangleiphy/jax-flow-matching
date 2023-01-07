@@ -10,7 +10,7 @@ def make_loss(vec_field_net, beta):
     def _matching(params, x0, x1, t):
         x0 = x0 / jnp.sqrt(beta)
         x = t*x1 + (1 - t)*x0
-        v = phasespace_v(params, vec_field_net, x)
+        v = phasespace_v(params, vec_field_net, x, t)
 
         return jnp.sum(((x1 - x0) - v)**2)
 

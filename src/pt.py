@@ -8,10 +8,10 @@ d q /d t = v
 d p /d t = s*p - p*(dv/dq)
 '''
 
-def phasespace_v(params, vec_field_net, x):
+def phasespace_v(params, vec_field_net, x, t):
     s_params, v_params = params
     p, q = jnp.split(x, 2)
-    v, vjp = jax.vjp(lambda _: vec_field_net(v_params, _), q)
+    v, vjp = jax.vjp(lambda _: vec_field_net(v_params, _, t), q)
     u, = vjp(p)
     u = s_params * p - u
     return jnp.concatenate([u, v])
@@ -25,6 +25,7 @@ def make_point_transformation(vec_field_net):
             v = phasespace_v(params,
                              vec_field_net, 
                              x, 
+                             t if sign==1 else 1.0-t
                              )
             return sign*v
 
