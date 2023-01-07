@@ -5,14 +5,16 @@ from jax.experimental import ode
 '''
 continuous point transformation in phase space 
 d q /d t = v 
-d p /d t = - p*(dv/dq)
+d p /d t = s*p - p*(dv/dq)
 '''
 
-def phasespace_v(params, vec_field_net, x, t):
+def phasespace_v(params, vec_field_net, x):
+    s_params, v_params = params
     p, q = jnp.split(x, 2)
-    v, vjp = jax.vjp(lambda _: vec_field_net(params, _, t), q)
+    v, vjp = jax.vjp(lambda _: vec_field_net(v_params, _), q)
     u, = vjp(p)
-    return jnp.concatenate([-u, v])
+    u = s_params * p - u
+    return jnp.concatenate([u, v])
 
 def make_point_transformation(vec_field_net):
 
@@ -20,11 +22,10 @@ def make_point_transformation(vec_field_net):
         assert x0.shape[0]%2 == 0
         assert abs(sign)==1
         def _ode(x, t):    
-            v = phasespace_v(params, 
-                            vec_field_net, 
-                            x, 
-                            t if sign==1 else 1.0-t
-                            )
+            v = phasespace_v(params,
+                             vec_field_net, 
+                             x, 
+                             )
             return sign*v
 
         x1 = ode.odeint(_ode,

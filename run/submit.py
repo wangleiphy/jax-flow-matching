@@ -40,6 +40,8 @@ if __name__=='__main__':
                         'n':n, 
                         'folder':resfolder,
                         'nlayers':nlayers, 
+                        'nheads':nheads,
+                        'keysize':keysize,
                         'nhiddens':nhiddens,
                         'lr':lr, 
                         }

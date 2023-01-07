@@ -2,14 +2,16 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'firsttry'
+nickname = 'not'
 
 ###############################
-nlist = [6]
+nlist = [10]
 betalist = [10.0]
 dim = 2
-model = 'backflow'
-nlayers = 2
+model = 'transformer'
+nlayers = 4
+nheads = 8
+keysize = 16
 nhiddens = 1024
 lr = 1e-3
 
@@ -21,7 +23,7 @@ def submitJob(bin,args,jobname,logname,run=False,wait=None):
 
     #prepare the job file 
     job='''#!/bin/bash -l
-#SBATCH --partition=a400
+#SBATCH --partition=a800
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
 #SBATCH --time=100:00:00

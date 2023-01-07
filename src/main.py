@@ -8,9 +8,6 @@ from net import make_vec_field_net, make_backflow, make_transformer
 from loss import make_loss
 from energy import make_energy, make_free_energy
 from train import train
-from scale import make_scale
-from pt import make_point_transformation
-from flow import make_symplectic_flow
 import checkpoint
 
 import os
@@ -23,7 +20,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
     group = parser.add_argument_group('learning parameters')
-    group.add_argument('--epochs', type=int, default=10000, help='')
+    group.add_argument('--epochs', type=int, default=1000, help='')
     group.add_argument('--batchsize', type=int, default=4096, help='')
     group.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 
@@ -43,7 +40,6 @@ if __name__ == '__main__':
     group.add_argument('--backflow', action='store_true', help='Use backflow')
     group.add_argument('--transformer', action='store_true', help='Use transformer')
     group.add_argument('--mlp', action='store_true', help='mlp')
-    group.add_argument('--emlp', action='store_true', help='emlp')
 
     group = parser.add_argument_group('physics parameters')
     group.add_argument('--n', type=int, default=6, help='The number of particles')
@@ -74,18 +70,14 @@ if __name__ == '__main__':
         modelname = 'transformer_nl_%d_nh_%d_nk_%d'%(args.nlayers, args.nheads, args.keysize)
     elif args.mlp:
         print ('construct mlp network')
-        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=False)
+        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers)
         modelname = 'mlp_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
-    elif args.emlp:
-        print ('construct emlp network')
-        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=True)
-        modelname = 'emlp'
     else:
         raise ValueError("what model ?")
 
     key, subkey = jax.random.split(key)
-    s_params, scale_net = make_scale(subkey, 2*args.n*args.dim)
-    loss = make_loss(scale_net, vec_field_net, args.beta)
+    s_params = jax.random.normal(subkey, (args.n*args.dim, )) * 0.01
+    loss = make_loss(vec_field_net, args.beta)
     value_and_grad = jax.value_and_grad(loss)
 
     print("\n========== Prepare logs ==========")
@@ -96,7 +88,7 @@ if __name__ == '__main__':
     print("Create directory: %s" % path)
 
     print("\n========== Load checkpoint==========")
-    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path) 
+    ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path or path) 
     if ckpt_filename is not None:
         print("Load checkpoint file: %s, epoch finished: %g" %(ckpt_filename, epoch_finished))
         ckpt = checkpoint.load_data(ckpt_filename)

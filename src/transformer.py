@@ -19,16 +19,10 @@ class Transformer(hk.Module):
   def __call__(
       self,
       embeddings: jnp.ndarray,  # [T, D]
-      t: float
   ) -> jnp.ndarray:  # [T, D]
     """Transforms input embedding sequences to output embedding sequences."""
     
-    seq_len, dim = embeddings.shape
-    model_size = dim + 1
-
-    embeddings = jnp.concatenate([embeddings, 
-                         jnp.repeat(jnp.array(t).reshape(1, 1), seq_len, axis=0)], 
-                         axis=1)
+    seq_len, model_size = embeddings.shape
     initializer = hk.initializers.VarianceScaling(2 / self.num_layers)
     
     h = embeddings
@@ -54,7 +48,6 @@ class Transformer(hk.Module):
       h_dense = dense_block(h_norm)
       h = h + h_dense
         
-    h = hk.Linear(dim, w_init=initializer)(h)
     return layer_norm(h)
 
 def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
@@ -64,9 +57,9 @@ def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
 
 if __name__=='__main__':
 
-    def forward_fn(x, t):
+    def forward_fn(x):
         model = Transformer(num_heads=8, num_layers=4, key_size=16)
-        return model(x, t)
+        return model(x)
 
     from jax.config import config   
     config.update("jax_enable_x64", True)
@@ -75,13 +68,12 @@ if __name__=='__main__':
     dim = 3
     key = jax.random.PRNGKey(42)
     x = jax.random.normal(key, (n, dim))    
-    t = jax.random.uniform(key)
 
     network = hk.transform(forward_fn)
-    params = network.init(key, x, t)
+    params = network.init(key, x)
 
-    v = network.apply(params, None, x, t)
+    v = network.apply(params, None, x)
     P = np.random.permutation(n)
-    Pv = network.apply(params, None, x[P, :], t)
+    Pv = network.apply(params, None, x[P, :])
 
     assert jnp.allclose(Pv, v[P, :])

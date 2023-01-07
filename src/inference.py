@@ -7,7 +7,6 @@ from data import sample_target
 from net import make_vec_field_net, make_backflow, make_transformer
 from energy import make_energy, make_free_energy
 from train import train
-from scale import make_scale
 from pt import make_point_transformation
 from flow import make_symplectic_flow
 import checkpoint
@@ -72,9 +71,8 @@ if __name__ == '__main__':
         raise ValueError("what model ?")
 
     key, subkey = jax.random.split(key)
-    s_params, scale_net = make_scale(subkey, 2*args.n*args.dim)
     pt = make_point_transformation(vec_field_net)
-    sample_fn, _ = make_symplectic_flow(scale_net, pt, 2*args.n*args.dim, args.beta)
+    sample_fn, _ = make_symplectic_flow(pt, 2*args.n*args.dim, args.beta)
     free_energy_fn = make_free_energy(energy_fn, sample_fn, args.n, args.dim, args.beta)
 
     print("\n========== Prepare logs ==========")
@@ -91,6 +89,9 @@ if __name__ == '__main__':
         raise ValueError("no checkpoint found")
 
     print("\n========== Start inference ==========")
+    omega = jnp.exp(params[0])
+    omega = jnp.sort(omega)
+    print ('omega:', omega)
 
     start = time.time()
     key, subkey = jax.random.split(key)
@@ -100,9 +101,6 @@ if __name__ == '__main__':
     print('free energy using trained model: %f ± %f' %(fe, fe_err))
     print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
     print('importance sampling time: %.5f sec' %running_time)
-    omega = jnp.exp(-params[0]['scale']['logscale'])
-    omega = jnp.sort(omega)
-    print ('omega:', omega)
 
     log_filename = os.path.join(folder, "epoch_%06d.txt" %(epoch_finished))
     f = open(log_filename, "w", buffering=1, newline="\n")

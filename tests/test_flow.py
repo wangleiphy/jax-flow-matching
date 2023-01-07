@@ -1,32 +1,32 @@
 from config import * 
 from pt import make_point_transformation
 from flow import make_symplectic_flow
-
-from scale import make_scale
-from test_pt import make_vec_field_net
+from net import make_transformer
 
 def test_logp():
 
     n = 6
     dim = 2
     batchsize = 10
-    T = 1.0
+    beta = 10.0
     key = jax.random.PRNGKey(42)
 
-    scale_params, scale = make_scale(key, 2*n*dim)
-    pt_params, vec_field_net = make_vec_field_net(key, n, dim)
+    s_params = jax.random.normal(key, (n*dim, ))* 0.01
+    v_params, vec_field_net = make_transformer(key, n, dim, 8, 4, 16)
     
-    params = scale_params, pt_params
+    params = s_params, v_params
 
     pt = make_point_transformation(vec_field_net)
 
-    sample, logp_fn = make_symplectic_flow(scale, pt, 2*n*dim, T)
+    sample, logp_fn = make_symplectic_flow(pt, 2*n*dim, beta)
     
     key, subkey = jax.random.split(key)
     x, logp = sample(subkey, params, batchsize)
     assert (x.shape == (batchsize, 2*n*dim))
     assert (logp.shape == (batchsize, ))
 
-    logp_inference, _ = logp_fn(params, x)
+    logp_inference = logp_fn(params, x)
     
     assert jnp.allclose(logp, logp_inference) 
+
+test_logp()
