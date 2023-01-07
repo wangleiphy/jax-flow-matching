@@ -11,8 +11,8 @@ class Backflow(hk.Module):
                  name: Optional[str] = None
                   ):
         super().__init__(name=name)
-        self.xi = jax.vmap(PseudoPotential(sizes), (0, None))
-        self.eta = jax.vmap(jax.vmap(PseudoPotential(sizes), (0, None)), (0, None))
+        self.xi = jax.vmap(PseudoPotential(sizes), (0, ))
+        self.eta = jax.vmap(jax.vmap(PseudoPotential(sizes), (0, )), (0, ))
      
     def __call__(self, x): 
         '''
@@ -36,7 +36,7 @@ class PseudoPotential(hk.Module):
     
     def __call__(self, r : float) -> float:
         mlp = hk.nets.MLP(self.sizes + [1], activation=jax.nn.softplus, w_init=hk.initializers.TruncatedNormal(0.01))
-        return mlp(r)
+        return mlp(r.reshape(1,))
 
 if __name__=='__main__':
     import jax 

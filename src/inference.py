@@ -38,7 +38,6 @@ if __name__ == '__main__':
     group.add_argument('--backflow', action='store_true', help='Use backflow')
     group.add_argument('--transformer', action='store_true', help='Use transformer')
     group.add_argument('--mlp', action='store_true', help='mlp')
-    group.add_argument('--emlp', action='store_true', help='emlp')
 
     group = parser.add_argument_group('physics parameters')
     group.add_argument('--n', type=int, default=6, help='The number of particles')
@@ -61,12 +60,8 @@ if __name__ == '__main__':
         modelname = 'transformer_nl_%d_nh_%d_nk_%d'%(args.nlayers, args.nheads, args.keysize)
     elif args.mlp:
         print ('construct mlp network')
-        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=False)
+        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers)
         modelname = 'mlp_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
-    elif args.emlp:
-        print ('construct emlp network')
-        v_params, vec_field_net = make_vec_field_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers, symmetry=True)
-        modelname = 'emlp'
     else:
         raise ValueError("what model ?")
 

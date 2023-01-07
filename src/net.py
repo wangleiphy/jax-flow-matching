@@ -44,7 +44,7 @@ def make_backflow(key, n, dim, sizes):
 
     def forward_fn(x):
         net = Backflow(sizes)
-        return net(x.reshape(n, dim), t).reshape(n*dim)
+        return net(x.reshape(n, dim)).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x)
     return params, network.apply 
