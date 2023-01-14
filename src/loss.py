@@ -11,22 +11,6 @@ def make_loss(vec_field_net):
 
     def loss(params, x0, x1, t):
         m = _matching(params, x0, x1, t)
-        m_mean = jnp.mean(m)
-        #m_std = jnp.std(m) / jnp.sqrt(m.shape[0])
-        return m_mean#, m_std
+        return jnp.mean(m)
 
     return loss
-
-if __name__ == '__main__':
-    from jax import random
-    from net import make_vec_field_net
-
-    n = 2
-    dim = 2
-    sample_size = 10
-
-    params, vec_field_net = make_vec_field_net(random.PRNGKey(42), n, dim, symmetry=False)
-
-    loss = make_loss(vec_field_net)
-
-    print(loss(params, random.normal(random.PRNGKey(41), (sample_size, n*dim)), jnp.ones((sample_size, n*dim)), jnp.zeros((sample_size,))))

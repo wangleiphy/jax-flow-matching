@@ -48,10 +48,10 @@ def NeuralODE(vec_field_net, dim):
                  mxstep=20000
                  )
         return x0[-1], base_logp(x0[-1]) - logp0[-1]
-
+    
+    @partial(jax.jit, static_argnums=2)
     def batched_sample_fun(rng, params, sample_size):
         x0 = jax.random.normal(rng, (sample_size, dim))
-
         return forward(params, x0)
 
     @partial(jax.vmap, in_axes=(None, 0), out_axes=0)
@@ -72,9 +72,3 @@ def NeuralODE(vec_field_net, dim):
         return base_logp(x0[-1]) - logp0[-1]
     
     return forward, reverse, batched_sample_fun, logp_fun
-
-
-
-
-
-
