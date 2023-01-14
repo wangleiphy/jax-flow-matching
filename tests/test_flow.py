@@ -1,6 +1,6 @@
 from config import *
 from transformer import make_transformer 
-from flow import NeuralODE
+from flow import make_flow
 
 def test_logp():
 
@@ -15,7 +15,7 @@ def test_logp():
     key = jax.random.PRNGKey(42)
 
     params, network = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
-    _, _, batched_sampler, logp_fun = NeuralODE(network, n*dim)
+    _, _, batched_sampler, logp_fun = make_flow(network, n*dim, L)
 
     key, subkey = jax.random.split(key)
     x, logp = batched_sampler(subkey, params, batchsize)

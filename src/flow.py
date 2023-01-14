@@ -1,10 +1,9 @@
 import jax
 import jax.numpy as jnp
 from jax.experimental import ode
-from jax.scipy.stats import norm
 from functools import partial
 
-def NeuralODE(vec_field_net, dim):
+def make_flow(vec_field_net, dim, L):
 
     def divergence_fwd(f):
         def _div_f(params, x, t):
@@ -13,7 +12,7 @@ def NeuralODE(vec_field_net, dim):
         return _div_f
 
     def base_logp(x):
-        return norm.logpdf(x).sum(-1)
+        return -dim*jnp.log(L)
     
     @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
     def forward(params, x0):
@@ -51,7 +50,7 @@ def NeuralODE(vec_field_net, dim):
     
     @partial(jax.jit, static_argnums=2)
     def batched_sample_fun(rng, params, sample_size):
-        x0 = jax.random.normal(rng, (sample_size, dim))
+        x0 = jax.random.uniform(rng, (sample_size, dim), minval=0, maxval=L)
         return forward(params, x0)
 
     @partial(jax.vmap, in_axes=(None, 0), out_axes=0)

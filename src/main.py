@@ -18,12 +18,12 @@ parser = argparse.ArgumentParser(description="")
 
 group = parser.add_argument_group("learning parameters")
 group.add_argument("--epochs", type=int, default=1000, help="Epochs for training")
-group.add_argument("--batchsize", type=int, default=4096, help="")
+group.add_argument("--batchsize", type=int, default=1000, help="")
 group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--dataset", default="../datasets/data.npz",help="The path to training dataset")
+group.add_argument("--dataset", default="../data/LJSystem_npy/liquid/traj_N32_rho0.7_T1.0.npy",help="The path to training dataset")
 
 group = parser.add_argument_group("network parameters")
 group.add_argument("--nlayers", type=int, default=4, help="The number of layers")
@@ -38,10 +38,13 @@ print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
     data = jnp.load(args.dataset)
-    X1 = data["X1"]
+    X1 = data
     datasize, n, dim = X1.shape[0], X1.shape[1], X1.shape[2]
+    X1 = X1.reshape(datasize, n*dim)
     assert (datasize % args.batchsize == 0)
-    L = data["L"] 
+    L = 12.225024745980599
+    print (jnp.min(X1), jnp.max(X1))
+    X1 -= L * jnp.floor(X1/L)
     print("Load dataset: %s" % args.dataset)
 else:
     raise ValueError("what dataset ?")
@@ -60,7 +63,7 @@ value_and_grad = jax.value_and_grad(loss)
 
 print("\n========== Prepare logs ==========")
 
-path = args.folder + "n_%d_dim_%d_%g_lr_%g" % (args.n, args.dim, args.lr) \
+path = args.folder + "n_%d_dim_%g_lr_%g" % (n, dim, args.lr) \
                     + "_" + modelname
 os.makedirs(path, exist_ok=True)
 print("Create directory: %s" % path)
@@ -70,7 +73,7 @@ print("Create directory: %s" % path)
 print("\n========== Train ==========")
 
 start = time.time()
-params = train(rng, value_and_grad, args.epoch, args.batchsize, params, X1, args.lr, path)
+params = train(rng, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, L)
 end = time.time()
 running_time = end - start
 print("training time: %.5f sec" %running_time)

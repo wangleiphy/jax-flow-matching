@@ -5,7 +5,7 @@ config.update("jax_enable_x64", True)
 
 from transformer import make_transformer
 from energy import make_energy, make_free_energy
-from flow import NeuralODE
+from flow import make_flow 
 import checkpoint
 
 import os
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     modelname = "transformer_nl_%d_nh_%d_nk_%d" % (args.nlayers, args.nheads, args.keysize)
 
     key, subkey = jax.random.split(key)
-    -_, _, batched_sample_fun, _ = NeuralODE(vec_field_net, args.n*args.dim)
+    -_, _, batched_sample_fun, _ = make_flow(vec_field_net, args.n*args.dim, L)
     free_energy_fn = make_free_energy(energy_fn, batched_sample_fn, args.n, args.dim, args.beta)
 
     print("\n========== Prepare logs ==========")

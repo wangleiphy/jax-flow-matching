@@ -12,14 +12,14 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(rng, value_and_grad, nepoch, batchsize, params, data, lr, path):
+def train(rng, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
 
     assert (len(data)%batchsize==0)
 
     @jax.jit
     def step(rng, i, state, x1):
         sample_rng, rng = jax.random.split(rng)
-        x0 = jax.random.normal(sample_rng, x1.shape)
+        x0 = jax.random.uniform(sample_rng, x1.shape, minval=0, maxval=L)
         t = jax.random.uniform(rng, (batchsize,))
 
         value, grad = value_and_grad(state.params, x0, x1, t)
