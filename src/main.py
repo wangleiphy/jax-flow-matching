@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+from jax.flatten_util import ravel_pytree
 
 from transformer import make_transformer
 from loss import make_loss
@@ -55,10 +56,11 @@ print("\n========== Construct transformer network ==========")
 params, vec_field_net = make_transformer(init_rng, n, dim, args.nheads, args.nlayers, args.keysize, L)
 modelname = "transformer_nl_%d_nh_%d_nk_%d" % (args.nlayers, args.nheads, args.keysize)
 
-"""initializing the loss function"""
-loss = make_loss(vec_field_net)
-value_and_grad = jax.value_and_grad(loss)
+raveled_params, _ = ravel_pytree(params)
+print("# of params: %d" % raveled_params.size)
 
+loss = make_loss(vec_field_net, L)
+value_and_grad = jax.value_and_grad(loss)
 ####################################################################################
 
 print("\n========== Prepare logs ==========")

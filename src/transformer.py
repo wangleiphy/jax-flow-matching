@@ -55,7 +55,7 @@ class Transformer(hk.Module):
       h_dense = dense_block(h_norm)
       h = h + h_dense
         
-    return hk.Linear(dim, w_init=initializer)(h) 
+    return hk.Linear(dim, w_init=hk.initializers.TruncatedNormal(0.01))(h) 
 
 def layer_norm(x: jnp.ndarray) -> jnp.ndarray:
   """Applies a unique LayerNorm to x with default settings."""

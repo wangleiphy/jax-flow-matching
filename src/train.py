@@ -12,15 +12,15 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(rng, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
+def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
 
     assert (len(data)%batchsize==0)
 
     @jax.jit
-    def step(rng, i, state, x1):
-        sample_rng, rng = jax.random.split(rng)
-        x0 = jax.random.uniform(sample_rng, x1.shape, minval=0, maxval=L)
-        t = jax.random.uniform(rng, (batchsize,))
+    def step(key, i, state, x1):
+        key, key_x0, key_t = jax.random.split(key, 3)
+        x0 = jax.random.uniform(key_x0, x1.shape, minval=0, maxval=L)
+        t = jax.random.uniform(key_t, (batchsize,))
 
         value, grad = value_and_grad(state.params, x0, x1, t)
 
@@ -36,18 +36,18 @@ def train(rng, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
     log_filename = os.path.join(path, "loss.txt")
     f = open(log_filename, "w", buffering=1, newline="\n")
     itercount = itertools.count()
-    for epoch in range(1, nepoch+1):
-        permute_rng, rng = jax.random.split(rng)
-        data = jax.random.permutation(permute_rng, data)
+    for epoch in range(nepoch):
+        key, subkey = jax.random.split(key)
+        data = jax.random.permutation(subkey, data)
 
         total_loss = 0.0
         counter = 0 
         for batch_index in range(0, len(data), batchsize):
             x1 = data[batch_index:batch_index+batchsize]
 
-            step_rng, rng = jax.random.split(rng)
-            state, d_mean = step(step_rng, next(itercount), state, x1)
-            total_loss += d_mean
+            key, subkey = jax.random.split(key)
+            state, loss = step(subkey, next(itercount), state, x1)
+            total_loss += loss
             counter += 1
 
         f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )

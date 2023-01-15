@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from jax.experimental import ode
 from functools import partial
 
-def make_flow(vec_field_net, dim, L):
+def make_flow(vec_field_net, dim, L, mxstep=1000):
 
     def divergence_fwd(f):
         def _div_f(params, x, t):
@@ -13,9 +13,22 @@ def make_flow(vec_field_net, dim, L):
 
     def base_logp(x):
         return -dim*jnp.log(L)
+
+    @partial(jax.vmap, in_axes=(None, 0), out_axes=0)
+    def forward(params, x0):
+        def _ode(x, t):
+            return vec_field_net(params, x, t)
+        
+        xt = ode.odeint(_ode,
+                 x0,
+                 jnp.array([0.0, 1.0]),
+                 rtol=1e-10, atol=1e-10,
+                 mxstep=mxstep
+                 )
+        return xt[-1]
     
     @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
-    def forward(params, x0):
+    def forward_with_logp(params, x0):
         def _ode(state, t):
             x = state[0]  
             return vec_field_net(params, x, t), \
@@ -27,47 +40,18 @@ def make_flow(vec_field_net, dim, L):
                  [x0, logp0],
                  jnp.array([0.0, 1.0]),
                  rtol=1e-10, atol=1e-10,
-                 mxstep=20000
+                 mxstep=mxstep
                  )
         return xt[-1], logpt[-1]
 
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
-    def reverse(params, xt):
-        def _ode(state, t):
-            x = state[0]     
-            return - vec_field_net(params, x, -t), \
-                divergence_fwd(vec_field_net)(params, x, -t)
-        
-        logpt = 0.0
-        
-        x0, logp0 = ode.odeint(_ode,
-                 [xt, logpt],
-                 jnp.array([-1.0, 0.0]),
-                 rtol=1e-10, atol=1e-10,
-                 mxstep=20000
-                 )
-        return x0[-1], base_logp(x0[-1]) - logp0[-1]
-    
     @partial(jax.jit, static_argnums=2)
-    def batched_sample_fun(rng, params, sample_size):
-        x0 = jax.random.uniform(rng, (sample_size, dim), minval=0, maxval=L)
+    def sample_and_logp_fn(key, params, batchsize):
+        x0 = jax.random.uniform(key, (batchsize, dim), minval=0, maxval=L)
+        return forward_with_logp(params, x0)
+
+    @partial(jax.jit, static_argnums=2)
+    def sample_fn(key, params, batchsize):
+        x0 = jax.random.uniform(key, (batchsize, dim), minval=0, maxval=L)
         return forward(params, x0)
-
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=0)
-    def logp_fun(params, xt):
-        def _ode(state, t):
-            x = state[0]     
-            return - vec_field_net(params, x, -t), \
-                divergence_fwd(vec_field_net)(params, x, -t)
-        
-        logpt = 0.0
-
-        x0, logp0 = ode.odeint(_ode,
-                 [xt, logpt],
-                 jnp.array([-1.0, 0.0]),
-                 rtol=1e-10, atol=1e-10,
-                 mxstep=20000
-                 )
-        return base_logp(x0[-1]) - logp0[-1]
     
-    return forward, reverse, batched_sample_fun, logp_fun
+    return sample_fn, sample_and_logp_fn

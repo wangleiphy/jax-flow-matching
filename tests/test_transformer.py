@@ -18,8 +18,12 @@ def test_symmetry():
     v = network(params, x, t).reshape(n, dim)
     P = np.random.permutation(n)
     Pv = network(params, x[P, :], t).reshape(n, dim)
+
+    print (v)
     
     assert jnp.allclose(Pv, v[P, :])
 
     Tv = network(params, x+L, t).reshape(n, dim)
     assert jnp.allclose(Tv, v)
+
+test_symmetry()

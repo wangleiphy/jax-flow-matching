@@ -15,15 +15,11 @@ def test_logp():
     key = jax.random.PRNGKey(42)
 
     params, network = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
-    _, _, batched_sampler, logp_fun = make_flow(network, n*dim, L)
+    sampler, sampler_with_logp = make_flow(network, n*dim, L)
 
     key, subkey = jax.random.split(key)
-    x, logp = batched_sampler(subkey, params, batchsize)
+    x, logp = sampler_with_logp(subkey, params, batchsize)
     assert (x.shape == (batchsize, n*dim))
     assert (logp.shape == (batchsize, ))
-
-    logp_inference = logp_fun(params, x)
-    
-    assert jnp.allclose(logp, logp_inference) 
 
 test_logp()
