@@ -4,6 +4,8 @@ import numpy as np
 import haiku as hk
 from typing import Optional
 
+from utils import softcore
+
 class FermiNet(hk.Module):
 
     def __init__(self, 
@@ -18,7 +20,6 @@ class FermiNet(hk.Module):
         super().__init__(name=name)
         assert (depth >= 2)
         self.depth = depth
-        self.h1_size = h1_size
         self.Nf = Nf
         self.L = L
         self.init_stddev = init_stddev
@@ -76,7 +77,7 @@ class FermiNet(hk.Module):
         h1 = jnp.tanh(self.fc1[-1](f)) + h1
 
         final = hk.Linear(dim, w_init=hk.initializers.TruncatedNormal(self.init_stddev), with_bias=False)
-        return final(h1) 
+        return final(h1) - jax.grad(softcore)(x, self.L)
 
 def make_ferminet(key, n, dim, depth, h1size, h2size, L):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
