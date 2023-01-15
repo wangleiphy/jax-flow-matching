@@ -1,11 +1,10 @@
 
-
 train
 ```bash 
-python main.py 
+python main.py --ferminet 
 ```
 
 inference 
 ```bash
-python inference.py --restore_path ../data/n_32_dim_3_lr_0.001_transformer_nl_4_nh_8_nk_16/
+python inference.py --ferminet --restore_path ../data/n_32_dim_3_lr_0.001_ferminet_d_3_h1_32_h2_16/
 ```

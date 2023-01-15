@@ -1,9 +1,10 @@
 import jax
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
-from jax.config import config
-config.update("jax_enable_x64", True)
+from jax.flatten_util import ravel_pytree
 
 from transformer import make_transformer
+from ferminet import make_ferminet 
 #from energy import make_energy, make_free_energy
 from flow import make_flow 
 import checkpoint
@@ -25,10 +26,20 @@ if __name__ == '__main__':
     group = parser.add_argument_group('filesystem')
     group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
-    group = parser.add_argument_group('network parameters')
-    group.add_argument('--nlayers', type=int, default=4, help='The number of layers')
-    group.add_argument('--nheads', type=int, default=8, help='')
-    group.add_argument('--keysize', type=int, default=16, help='')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--transformer", action="store_true", help="Use transformer")
+    group.add_argument("--ferminet", action="store_true", help="Use ferminet")
+
+    group = parser.add_argument_group("transformer parameters")
+    group.add_argument("--nlayers", type=int, default=4, help="The number of layers")
+    group.add_argument("--nheads", type=int, default=8, help="")
+    group.add_argument("--keysize", type=int, default=16, help="")
+
+    group = parser.add_argument_group("ferminet parameters")
+    group.add_argument("--depth", type=int, default=3, help="The number of layers")
+    group.add_argument("--h1size", type=int, default=32, help="")
+    group.add_argument("--h2size", type=int, default=16, help="")
+
 
     group = parser.add_argument_group('physics parameters')
     group.add_argument('--n', type=int, default=6, help='The number of particles')
@@ -42,9 +53,19 @@ if __name__ == '__main__':
     dim = 3
     L = 12.225024745980599
 
-    print("\n========== Build networks ==========")
-    params, vec_field_net = make_transformer(key, n, dim, args.nheads, args.nlayers, args.keysize, L)
-    modelname = "transformer_nl_%d_nh_%d_nk_%d" % (args.nlayers, args.nheads, args.keysize)
+    if args.transformer:
+        print("\n========== Construct transformer ==========")
+        params, vec_field_net = make_transformer(key, n, dim, args.nheads, args.nlayers, args.keysize, L)
+        modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
+    elif args.ferminet:
+        print("\n========== Construct ferminet ==========")
+        params, vec_field_net = make_ferminet(key, n, dim, args.depth, args.h1size, args.h2size, L)
+        modelname = "ferminet_d_%d_h1_%d_h2_%d" % (args.depth, args.h1size, args.h2size)
+    else:
+        raise ValueError("what model ?")
+
+    raveled_params, _ = ravel_pytree(params)
+    print("# of params: %d" % raveled_params.size)
 
     key, subkey = jax.random.split(key)
     sampler, sampler_with_logp = make_flow(vec_field_net, n*dim, L)
