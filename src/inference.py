@@ -102,13 +102,17 @@ print("\n========== Start inference ==========")
 start = time.time()
 key, subkey = jax.random.split(key)
 x = sampler(subkey, params, args.batchsize)
-print (x.shape, n, dim)
+print ('sample shape', x.shape)
 
 rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
-rdf_model = utils.get_gr(x.reshape(-1, n, dim), L)
-
 plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
-plt.plot(rdf_model[0], rdf_model[1], linestyle='-', c='red', label='model')
+for t in range(x.shape[1]):
+    rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
+    plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
+             label='model_%g'%(t/(x.shape[1]-1)),
+             )
+             #alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
+             #)
 plt.legend()
 plt.show()
 import sys 

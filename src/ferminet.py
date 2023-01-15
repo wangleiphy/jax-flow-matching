@@ -77,7 +77,7 @@ class FermiNet(hk.Module):
         h1 = jnp.tanh(self.fc1[-1](f)) + h1
 
         final = hk.Linear(dim, w_init=hk.initializers.TruncatedNormal(self.init_stddev), with_bias=False)
-        return final(h1) - jax.grad(softcore)(x, self.L)
+        return final(h1) #- jax.grad(softcore)(x, self.L)
 
 def make_ferminet(key, n, dim, depth, h1size, h2size, L):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)

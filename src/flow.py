@@ -21,11 +21,11 @@ def make_flow(vec_field_net, dim, L, mxstep=1000):
         
         xt = ode.odeint(_ode,
                  x0,
-                 jnp.array([0.0, 1.0]),
+                 jnp.linspace(0, 1, 5), 
                  rtol=1e-10, atol=1e-10,
                  mxstep=mxstep
                  )
-        return xt[-1]
+        return xt
     
     @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
     def forward_with_logp(params, x0):

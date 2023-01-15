@@ -3,4 +3,4 @@ job*
 *.out
 /datasets
 /data
-*/__pycache__
+__pycache__/

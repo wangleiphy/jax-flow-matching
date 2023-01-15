@@ -16,8 +16,12 @@ def test_logp():
 
     params, network = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
     sampler, sampler_with_logp = make_flow(network, n*dim, L)
-
+    
     key, subkey = jax.random.split(key)
+
+    x = sampler(subkey, params, batchsize)
+    assert (x.shape == (batchsize, 5, n*dim))
+
     x, logp = sampler_with_logp(subkey, params, batchsize)
     assert (x.shape == (batchsize, n*dim))
     assert (logp.shape == (batchsize, ))

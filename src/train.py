@@ -21,6 +21,7 @@ def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
         key, key_x0, key_t = jax.random.split(key, 3)
         x0 = jax.random.uniform(key_x0, x1.shape, minval=0, maxval=L)
         t = jax.random.uniform(key_t, (batchsize,))
+        t = 1-t**2
 
         value, grad = value_and_grad(state.params, x0, x1, t)
 
