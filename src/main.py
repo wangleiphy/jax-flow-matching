@@ -17,7 +17,7 @@ import os
 parser = argparse.ArgumentParser(description="")
 
 group = parser.add_argument_group("learning parameters")
-group.add_argument("--epochs", type=int, default=10000, help="Epochs for training")
+group.add_argument("--epochs", type=int, default=100000, help="Epochs for training")
 group.add_argument("--batchsize", type=int, default=1000, help="")
 group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
 group.add_argument("--folder", default="../data/", help="The folder to save data")

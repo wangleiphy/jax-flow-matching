@@ -39,6 +39,7 @@ if __name__=='__main__':
                         'h1size':h1size,
                         'h2size':h2size,
                         'lr':lr, 
+                        'batchsize': batchsize
                         }
                 args[model] = ''
  

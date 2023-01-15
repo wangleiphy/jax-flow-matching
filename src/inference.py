@@ -105,6 +105,7 @@ x = sampler(subkey, params, args.batchsize)
 print ('sample shape', x.shape)
 
 rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
+print ('data shape', X1.shape)
 plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
 for t in range(x.shape[1]):
     rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)

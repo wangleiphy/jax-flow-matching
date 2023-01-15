@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from jax.experimental import ode
 from functools import partial
 
-def make_flow(vec_field_net, dim, L, mxstep=1000):
+def make_flow(vec_field_net, dim, L, mxstep=100):
 
     def divergence_fwd(f):
         def _div_f(params, x, t):

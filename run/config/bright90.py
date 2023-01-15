@@ -2,16 +2,14 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'gas-1-t2'
+nickname = 'gas'
 
 ###############################
-nlist = [32]
-betalist = [10.0]
-dim = 2
 model = 'ferminet'
 depth = 4 
-h1size = 64 
+h1size = 128 
 h2size = 32 
+batchsize = 10000
 lr = 1e-3
 
 ###############################
