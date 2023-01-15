@@ -12,9 +12,6 @@ import argparse
 import time
 import os
 
-jax.config.update("jax_enable_x64", True)
-rng = jax.random.PRNGKey(42)
-
 ####################################################################################
 
 parser = argparse.ArgumentParser(description="")
@@ -46,6 +43,8 @@ args = parser.parse_args()
 
 ####################################################################################
 
+key = jax.random.PRNGKey(42)
+
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
@@ -62,15 +61,15 @@ else:
     raise ValueError("what dataset ?")
 ####################################################################################
 
-init_rng, rng = jax.random.split(rng)
+key, subkey = jax.random.split(key)
 
 if args.transformer:
     print("\n========== Construct transformer ==========")
-    params, vec_field_net = make_transformer(init_rng, n, dim, args.nheads, args.nlayers, args.keysize, L)
+    params, vec_field_net = make_transformer(subkey, n, dim, args.nheads, args.nlayers, args.keysize, L)
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net = make_ferminet(init_rng, n, dim, args.depth, args.h1size, args.h2size, L)
+    params, vec_field_net = make_ferminet(subkey, n, dim, args.depth, args.h1size, args.h2size, L)
     modelname = "ferminet_d_%d_h1_%d_h2_%d" % (args.depth, args.h1size, args.h2size)
 else:
     raise ValueError("what model ?")
@@ -94,7 +93,7 @@ print("Create directory: %s" % path)
 print("\n========== Train ==========")
 
 start = time.time()
-params = train(rng, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, L)
+params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, L)
 end = time.time()
 running_time = end - start
 print("training time: %.5f sec" %running_time)
