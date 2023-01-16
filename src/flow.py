@@ -2,14 +2,9 @@ import jax
 import jax.numpy as jnp
 from jax.experimental import ode
 from functools import partial
+from utils import divergence_hutchinson
 
 def make_flow(vec_field_net, dim, L, mxstep=100):
-
-    def divergence_fwd(f):
-        def _div_f(params, x, t):
-            jac = jax.jacfwd(lambda x: f(params, x, t))
-            return jnp.trace(jac(x))
-        return _div_f
 
     def base_logp(x):
         return -dim*jnp.log(L)
@@ -27,12 +22,12 @@ def make_flow(vec_field_net, dim, L, mxstep=100):
                  )
         return xt
     
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
-    def forward_with_logp(params, x0):
+    @partial(jax.vmap, in_axes=(None, 0, 0), out_axes=(0,0))
+    def forward_with_logp(params, x0, key):
         def _ode(state, t):
             x = state[0]  
             return vec_field_net(params, x, t), \
-                - divergence_fwd(vec_field_net)(params, x, t)
+                 - divergence_hutchinson(lambda x: vec_field_net(params, x, t))(key, x)
         
         logp0 = base_logp(x0)
 
@@ -47,7 +42,8 @@ def make_flow(vec_field_net, dim, L, mxstep=100):
     @partial(jax.jit, static_argnums=2)
     def sample_and_logp_fn(key, params, batchsize):
         x0 = jax.random.uniform(key, (batchsize, dim), minval=0, maxval=L)
-        return forward_with_logp(params, x0)
+        subkeys = jax.random.split(key, batchsize)
+        return forward_with_logp(params, x0, subkeys)
 
     @partial(jax.jit, static_argnums=2)
     def sample_fn(key, params, batchsize):

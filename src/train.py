@@ -52,7 +52,7 @@ def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
 
         f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )
 
-        if epoch % 100 == 0:
+        if epoch % 1000 == 0:
             ckpt = {"params": state.params,
                    }
             ckpt_filename = os.path.join(path, "epoch_%06d.pkl" %(epoch))

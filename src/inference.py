@@ -83,7 +83,7 @@ print("# of params: %d" % raveled_params.size)
 key, subkey = jax.random.split(key)
 sampler, sampler_with_logp = make_flow(vec_field_net, n*dim, L)
 #energy_fn = make_energy(args.n, args.dim)
-#free_energy_fn = make_free_energy(energy_fn, sampler, args.n, args.dim, args.beta)
+#free_energy_fn = make_free_energy(energy_fn, sampler_with_logp, args.n, args.dim, args.beta)
 
 print("\n========== Prepare logs ==========")
 

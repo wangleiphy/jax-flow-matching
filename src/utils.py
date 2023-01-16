@@ -33,3 +33,16 @@ def softcore(x, L):
     _v = lambda r: (_f(r) + _f(L-r) - 2*_f(L/2))*(r<=L/2) + 0.0*(r>L/2)
 
     return jnp.sum(jax.vmap(_v)(r))
+
+def divergence_fwd(f):
+    def _div_f(x):
+        jac = jax.jacfwd(f)
+        return jnp.trace(jac(x))
+    return _div_f
+
+def divergence_hutchinson(f):
+    def _div_f(key, x):
+        v = jax.random.normal(key, x.shape)
+        _, jvp = jax.jvp(f, (x,), (v,))
+        return (jvp * v).sum()
+    return _div_f
