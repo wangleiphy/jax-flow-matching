@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax.experimental import ode
 from functools import partial
-from utils import divergence_hutchinson
+from utils import divergence_fori as div
 
 def make_flow(vec_field_net, dim, L, mxstep=100):
 
@@ -22,12 +22,12 @@ def make_flow(vec_field_net, dim, L, mxstep=100):
                  )
         return xt
     
-    @partial(jax.vmap, in_axes=(None, 0, 0), out_axes=(0,0))
-    def forward_with_logp(params, x0, key):
+    @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
+    def forward_with_logp(params, x0):
         def _ode(state, t):
             x = state[0]  
             return vec_field_net(params, x, t), \
-                 - divergence_hutchinson(lambda x: vec_field_net(params, x, t))(key, x)
+                 - div(lambda x: vec_field_net(params, x, t))(x)
         
         logp0 = base_logp(x0)
 
@@ -42,8 +42,7 @@ def make_flow(vec_field_net, dim, L, mxstep=100):
     @partial(jax.jit, static_argnums=2)
     def sample_and_logp_fn(key, params, batchsize):
         x0 = jax.random.uniform(key, (batchsize, dim), minval=0, maxval=L)
-        subkeys = jax.random.split(key, batchsize)
-        return forward_with_logp(params, x0, subkeys)
+        return forward_with_logp(params, x0)
 
     @partial(jax.jit, static_argnums=2)
     def sample_fn(key, params, batchsize):

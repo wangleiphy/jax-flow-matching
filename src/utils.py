@@ -46,3 +46,25 @@ def divergence_hutchinson(f):
         _, jvp = jax.jvp(f, (x,), (v,))
         return (jvp * v).sum()
     return _div_f
+
+def divergence_scan(f):
+    def _div_f(x):
+        n = x.shape[0]
+        eye = jnp.eye(n)
+
+        def _body_fun(val, i):
+            primal, tangent = jax.jvp(f, (x,), (eye[i],))
+            return val + tangent[i], None
+                                             
+        return jax.lax.scan(_body_fun, 0.0, jnp.arange(0, n))[0]
+    return _div_f
+
+def divergence_fori(f):
+    def _div_f(x):
+        n = x.shape[0]
+        eye = jnp.eye(n)
+        def _body_fun(i, val):
+            primal, tangent = jax.jvp(f, (x,), (eye[i],))
+            return val + tangent[i]
+        return jax.lax.fori_loop(0, n, _body_fun, 0.0)
+    return _div_f
