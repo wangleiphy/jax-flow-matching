@@ -35,9 +35,11 @@ if __name__=='__main__':
     
     if True: 
                 args = {'folder':resfolder,
-                        'depth':depth,
+                        'nlayers':nlayers,
                         'h1size':h1size,
                         'h2size':h2size,
+                        'keysize':keysize, 
+                        'nheads':nheads,
                         'lr':lr, 
                         'batchsize': batchsize
                         }

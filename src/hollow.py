@@ -32,14 +32,14 @@ def make_transformer(hidden_sizes, dim):
 
     return transformer
 
-def make_hollow_net(key, n, dim, L, hidden_sizes):
+def make_hollow_net(key, n, dim, L, nheads, keysize, h1size, h2size, nlayers):
 
     @hk.without_apply_rng
     @hk.transform
     def hollow_net(x, t): 
         x = x.reshape(n, dim)
-        conditioner = make_conditioner(8, 16, dim*16)
-        transformer = make_transformer(hidden_sizes, dim)
+        conditioner = make_conditioner(nheads, keysize, dim*h1size)
+        transformer = make_transformer([h2size]*nlayers, dim)
         x = jnp.concatenate([jnp.cos(2*jnp.pi*x/L), 
                              jnp.sin(2*jnp.pi*x/L), 
                              ], axis=1) # (n, 2d)

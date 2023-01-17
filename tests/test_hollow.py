@@ -7,11 +7,15 @@ def test_symmetry():
     n = 8
     dim = 3
     L = 1.234
-    hidden_sizes = [16, 16]
+    nheads = 8
+    keysize = 16 
+    h1size = 32
+    h2size = 32
+    nlayers = 2 
 
     key = jax.random.PRNGKey(42)
 
-    params, network, _ = make_hollow_net(key, n, dim, L, hidden_sizes)
+    params, network, _ = make_hollow_net(key, n, dim, L, nheads, keysize, h1size, h2size, nlayers)
 
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)
@@ -30,11 +34,15 @@ def test_div():
     n = 3
     dim = 2
     L = 1.234
-    hidden_sizes = [16, 16]
+    nheads = 8
+    keysize = 16 
+    h1size = 32
+    h2size = 32
+    nlayers = 2 
 
     key = jax.random.PRNGKey(42)
 
-    params, network, div_fn = make_hollow_net(key, n, dim, L, hidden_sizes)
+    params, network, div_fn = make_hollow_net(key, n, dim, L, nheads, keysize, h1size, h2size, nlayers)
 
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)

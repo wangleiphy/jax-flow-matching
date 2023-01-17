@@ -5,11 +5,13 @@ import time
 nickname = 'gas'
 
 ###############################
-model = 'ferminet'
-depth = 4 
-h1size = 128 
-h2size = 32 
-batchsize = 10000
+model = 'hollow'
+nlayers = 2  
+h1size = 32
+h2size = 16
+nheads = 8
+keysize = 16 
+batchsize = 1000
 lr = 1e-3
 
 ###############################

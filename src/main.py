@@ -73,8 +73,8 @@ elif args.ferminet:
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
-    params, vec_field_net, _ = make_hollow_net(subkey, n, dim, L, [args.hidden_size]*args.nlayers)
-    modelname = "hollownet_l_%d_h_%d" % (args.nlayers, args.hidden_size)
+    params, vec_field_net, _ = make_hollow_net(subkey, n, dim, L, args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
+    modelname = "hollownet_nh_%d_k_%d_h1_%d_h2_%d_l_%d" % (args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
 else:
     raise ValueError("what model ?")
 
