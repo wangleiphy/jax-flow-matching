@@ -7,24 +7,30 @@ import jax
 import jax.numpy as jnp
 import haiku as hk
 
-from utils import divergence_fwd
+from maskedlinear import MaskedLinear
 
 def make_conditioner(num_heads, key_size, model_size):
     def conditioner(x):
+        mask = 1-jnp.eye(x.shape[0])
+        mask = mask[None, :, :] 
         mha = hk.MultiHeadAttention(num_heads=num_heads,
                                     key_size=key_size,
                                     model_size=model_size,
                                     w_init=hk.initializers.TruncatedNormal(stddev=0.01),
                                    )
 
-        return jnp.sum(mha(x, x, x), axis=0) # (n-1, h) -> (h,)
+        return mha(x, x, x, mask=mask)
     return conditioner
 
 def make_transformer(hidden_sizes):
     def transformer(x, h):
         dim = x.shape[0]
-        xh = jnp.concatenate([x, h], axis=0) # (dim+h,)
-        return hk.nets.MLP(hidden_sizes+[dim], activation=jax.nn.softplus)(xh)
+        mask = jnp.eye(dim, dtype=bool)
+        x_repeat = jnp.repeat(x[None, :], dim, axis=0) # (d, d)
+        x_repeat = jnp.where(mask, x_repeat, jax.lax.stop_gradient(x_repeat)) 
+        y = jnp.concatenate([x_repeat, h.reshape(dim, -1)], axis=1) # (d, d+h)
+        return hk.nets.MLP(hidden_sizes+[1], activation=jax.nn.softplus)(y)
+
     return transformer
 
 def make_hallow_net(hidden_sizes):
@@ -32,19 +38,21 @@ def make_hallow_net(hidden_sizes):
     @hk.without_apply_rng
     @hk.transform
     def hallow_net(x): 
-        conditioner = make_conditioner(8, 16, 16)
-        transformer = make_transformer(hidden_sizes)
-
         n, dim = x.shape
-        mask = jnp.eye(n, dtype=bool)
-        x_repeat = jnp.repeat(x[None, :, :], n, axis=0) # (n, n, dim)
-        x_hallow = x_repeat[~mask].reshape(n, (n-1), dim) # (n, (n-1), dim)
-    
-        h = hk.vmap(conditioner, split_rng=False)(x_hallow) # (n, h) 
-
-        def div(x, h):
-            return divergence_fwd(lambda x: transformer(x, h))(x)
-        return hk.vmap(transformer, split_rng=False)(x, h), \
-               jnp.sum(hk.vmap(div, split_rng=False)(x, h))
+        conditioner = make_conditioner(8, 16, dim*16)
+        transformer = make_transformer(hidden_sizes)
+        h = conditioner(x) # (n, d*h) 
+        h = jax.lax.stop_gradient(h)
+        return hk.vmap(transformer, split_rng=False)(x,h) # (n, dim)
 
     return hallow_net
+
+def make_divergence_fn(network, n, dim):
+
+    def divergence_fn(params, x):
+        f = lambda x: network.apply(params, x.reshape(n, dim)).reshape(-1)
+        x = x.reshape(-1)
+        _, jvp = jax.jvp(f, (x,), (jnp.ones_like(x),))
+        return jnp.sum(jvp)
+
+    return divergence_fn

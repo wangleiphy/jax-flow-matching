@@ -1,11 +1,11 @@
 from config import * 
-from hallow import make_hallow_net
 
+from hallow import make_hallow_net, make_divergence_fn
 from utils import divergence_fwd
 
 def test_symmetry():
-    n = 4 
-    dim = 1
+    n = 8
+    dim = 3
     hidden_sizes = [16, 16]
 
     key = jax.random.PRNGKey(42)
@@ -14,24 +14,15 @@ def test_symmetry():
     params = network.init(key, jnp.zeros((n, dim)))
 
     x = jax.random.normal(key, (n, dim))
-    v, div = network.apply(params, x)
+    v = network.apply(params, x)
 
     P = np.random.permutation(n)
-    Pv, Pdiv = network.apply(params, x[P, :])
-
-    print ('x', x)
-    print ('Px', x[P,:]) 
-    
-    #print (v)
-    #print (Pv)
-
-    #print (div)
-    #print (Pdiv)
+    Pv = network.apply(params, x[P, :])
 
     assert jnp.allclose(Pv, v[P, :])
 
 def test_div():
-    n = 10
+    n = 4
     dim = 3
     hidden_sizes = [16, 16]
 
@@ -42,9 +33,13 @@ def test_div():
 
     x = jax.random.normal(key, (n, dim))
     
-    f = lambda x: network.apply(params, x.reshape(n, dim))[0].reshape(-1)
+    f = lambda x: network.apply(params, x.reshape(n, dim)).reshape(-1)
     div = divergence_fwd(f)(x.reshape(-1))
-    print (div)
-    print (network.apply(params, x)[1])
+    
+    div_fn = make_divergence_fn(network, n, dim)
+    div2 = div_fn(params, x)
+    
+    print (div, div2)
+    assert (jnp.allclose(div, div2))
 
-test_symmetry()
+test_div()
