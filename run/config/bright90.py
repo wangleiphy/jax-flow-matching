@@ -13,6 +13,7 @@ nheads = 8
 keysize = 16 
 batchsize = 100
 lr = 1e-3
+dataset = '../data/position.dat'
 
 ###############################
 prog = '../src/main.py'

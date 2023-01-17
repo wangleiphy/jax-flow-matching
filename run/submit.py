@@ -41,13 +41,14 @@ if __name__=='__main__':
                         'keysize':keysize, 
                         'nheads':nheads,
                         'lr':lr, 
-                        'batchsize': batchsize
+                        'batchsize': batchsize,
+                        'dataset':dataset
                         }
                 args[model] = ''
  
                 logname = jobdir
                 for key, val in args.items():
-                    if key != 'folder':
+                    if key != 'folder' and key !='dataset':
                         k = str(key)
                         if '_' in k:
                             k = ''.join([s[0] for s in k.split('_')])
