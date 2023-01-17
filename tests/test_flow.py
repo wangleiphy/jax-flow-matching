@@ -14,8 +14,8 @@ def test_logp():
 
     key = jax.random.PRNGKey(42)
 
-    params, network = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
-    sampler, sampler_with_logp = make_flow(network, n*dim, L)
+    params, network, div_fn = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
+    sampler, sampler_with_logp = make_flow(network, div_fn, n*dim, L)
     
     key, subkey = jax.random.split(key)
 

@@ -10,7 +10,7 @@ def test_symmetry():
     L = 1.234
 
     key = jax.random.PRNGKey(42)
-    params, network = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
+    params, network, _ = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
    
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)

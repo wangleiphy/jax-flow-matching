@@ -7,6 +7,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from utils import softcore
+from utils import divergence_fori as div
 
 @dataclasses.dataclass
 class Transformer(hk.Module):
@@ -72,5 +73,7 @@ def make_transformer(key, n, dim, num_heads, num_layers, key_sizes, L):
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)
-    return params, network.apply
+
+    div_fn = lambda params, x, t: div(lambda x: network.apply(params, x, t))(x)
+    return params, network.apply, div_fn
 

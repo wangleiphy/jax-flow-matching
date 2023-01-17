@@ -5,6 +5,7 @@ from jax.flatten_util import ravel_pytree
 
 from transformer import make_transformer
 from ferminet import make_ferminet 
+from hollow import make_hollow_net 
 from loss import make_loss
 from train import train
 
@@ -26,18 +27,17 @@ group = parser.add_argument_group("datasets")
 group.add_argument("--dataset", default="../data/LJSystem_npy/liquid/traj_N32_rho0.7_T1.0.npy",help="The path to training dataset")
 
 group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--hollow", action="store_true", help="Use hollownet")
 group.add_argument("--transformer", action="store_true", help="Use transformer")
 group.add_argument("--ferminet", action="store_true", help="Use ferminet")
 
-group = parser.add_argument_group("transformer parameters")
+group = parser.add_argument_group("network parameters")
 group.add_argument("--nlayers", type=int, default=4, help="The number of layers")
 group.add_argument("--nheads", type=int, default=8, help="")
 group.add_argument("--keysize", type=int, default=16, help="")
-
-group = parser.add_argument_group("ferminet parameters")
-group.add_argument("--depth", type=int, default=3, help="The number of layers")
 group.add_argument("--h1size", type=int, default=32, help="")
 group.add_argument("--h2size", type=int, default=16, help="")
+group.add_argument("--hidden_size", type=int, default=64, help="")
 
 args = parser.parse_args()
 
@@ -69,8 +69,12 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net = make_ferminet(subkey, n, dim, args.depth, args.h1size, args.h2size, L)
-    modelname = "ferminet_d_%d_h1_%d_h2_%d" % (args.depth, args.h1size, args.h2size)
+    params, vec_field_net = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L)
+    modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
+elif args.hollow:
+    print("\n========== Construct hollownet ==========")
+    params, vec_field_net, _ = make_hollow_net(subkey, n, dim, L, [args.hidden_size]*args.nlayers)
+    modelname = "hollownet_l_%d_h_%d" % (args.nlayers, args.hidden_size)
 else:
     raise ValueError("what model ?")
 

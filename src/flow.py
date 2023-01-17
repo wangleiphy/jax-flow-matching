@@ -2,10 +2,9 @@ import jax
 import jax.numpy as jnp
 from jax.experimental import ode
 from functools import partial
-from utils import divergence_fori as div
 
-def make_flow(vec_field_net, dim, L, mxstep=100):
-
+def make_flow(vec_field_net, div_fn, dim, L, mxstep=100):
+    
     def base_logp(x):
         return -dim*jnp.log(L)
 
@@ -26,8 +25,7 @@ def make_flow(vec_field_net, dim, L, mxstep=100):
     def forward_with_logp(params, x0):
         def _ode(state, t):
             x = state[0]  
-            return vec_field_net(params, x, t), \
-                 - div(lambda x: vec_field_net(params, x, t))(x)
+            return vec_field_net(params, x, t), -div_fn(params, x, t)
         
         logp0 = base_logp(x0)
 
