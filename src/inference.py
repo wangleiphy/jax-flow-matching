@@ -2,6 +2,7 @@ import jax
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
+import numpy as np
 
 from transformer import make_transformer
 from ferminet import make_ferminet 
@@ -34,12 +35,11 @@ group.add_argument("--transformer", action="store_true", help="Use transformer")
 group.add_argument("--ferminet", action="store_true", help="Use ferminet")
 
 group = parser.add_argument_group("network parameters")
-group.add_argument("--nlayers", type=int, default=4, help="The number of layers")
+group.add_argument("--nlayers", type=int, default=2, help="The number of layers")
 group.add_argument("--nheads", type=int, default=8, help="")
 group.add_argument("--keysize", type=int, default=16, help="")
 group.add_argument("--h1size", type=int, default=32, help="")
-group.add_argument("--h2size", type=int, default=16, help="")
-group.add_argument("--hidden_size", type=int, default=64, help="")
+group.add_argument("--h2size", type=int, default=32, help="")
 
 group = parser.add_argument_group('physics parameters')
 group.add_argument('--n', type=int, default=6, help='The number of particles')
@@ -53,11 +53,19 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    data = jnp.load(args.dataset)
-    X1 = data
-    datasize, n, dim = X1.shape[0], X1.shape[1], X1.shape[2]
+    #data = jnp.load(args.dataset)
+    #X1 = data
+    #datasize, n, dim = X1.shape[0], X1.shape[1], X1.shape[2]
+    #X1 = X1.reshape(datasize, n*dim)
+    #L = 12.225024745980599
+
+    data = np.loadtxt(args.dataset)
+    datasize, n, dim = 1000, 64, 3
+    L = data[-1, -1]
+    X1 = data[:, :-3]
     X1 = X1.reshape(datasize, n*dim)
-    L = 12.225024745980599
+    print (X1.shape, L)
+
     print (jnp.min(X1), jnp.max(X1))
     X1 -= L * jnp.floor(X1/L)
     print("Load dataset: %s" % args.dataset)
@@ -73,7 +81,7 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nalyers, args.h1size, args.h2size, L)
+    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L)
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")

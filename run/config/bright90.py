@@ -2,16 +2,16 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'gas'
+nickname = 'hydrogen'
 
 ###############################
-model = 'hollow'
-nlayers = 2  
-h1size = 32
-h2size = 16
+model = 'ferminet'
+nlayers = 4
+h1size = 256
+h2size = 64
 nheads = 8
 keysize = 16 
-batchsize = 1000
+batchsize = 100
 lr = 1e-3
 
 ###############################
