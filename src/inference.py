@@ -53,21 +53,7 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    #data = jnp.load(args.dataset)
-    #X1 = data
-    #datasize, n, dim = X1.shape[0], X1.shape[1], X1.shape[2]
-    #X1 = X1.reshape(datasize, n*dim)
-    #L = 12.225024745980599
-
-    data = np.loadtxt(args.dataset)
-    datasize, n, dim = 1000, 64, 3
-    L = data[-1, -1]
-    X1 = data[:, :-3]
-    X1 = X1.reshape(datasize, n*dim)
-    print (X1.shape, L)
-
-    print (jnp.min(X1), jnp.max(X1))
-    X1 -= L * jnp.floor(X1/L)
+    X1, n, dim, L = utils.loaddata(args.dataset)
     print("Load dataset: %s" % args.dataset)
 else:
     raise ValueError("what dataset ?")
@@ -123,10 +109,9 @@ plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
 for t in range(x.shape[1]):
     rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
     plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
-             label='model_%g'%(t/(x.shape[1]-1)),
+             label='model@t=%g'%(t/(x.shape[1]-1)),
+             alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
              )
-             #alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
-             #)
 plt.legend()
 plt.show()
 import sys 

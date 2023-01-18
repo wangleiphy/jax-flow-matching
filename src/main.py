@@ -9,6 +9,7 @@ from ferminet import make_ferminet
 from hollow import make_hollow_net 
 from loss import make_loss
 from train import train
+import utils
 
 import argparse
 import time
@@ -25,7 +26,7 @@ group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--dataset", default="../data/LJSystem_npy/liquid/traj_N32_rho0.7_T1.0.npy",help="The path to training dataset")
+group.add_argument("--dataset", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
@@ -48,22 +49,8 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    #data = jnp.load(args.dataset)
-    #X1 = data
-    #datasize, n, dim = X1.shape[0], X1.shape[1], X1.shape[2]
-    #L = 12.225024745980599
-    
-    data = np.loadtxt(args.dataset)
-    datasize, n, dim = 1000, 64, 3
-    L = data[-1, -1]
-    X1 = data[:, :-3]
-    X1 = X1.reshape(datasize, n*dim)
-    print (X1.shape, L)
-
-    assert (datasize % args.batchsize == 0)
-
-    print (jnp.min(X1), jnp.max(X1))
-    X1 -= L * jnp.floor(X1/L)
+    X1, n, dim, L = utils.loaddata(args.dataset)
+    assert (X1.shape[0]% args.batchsize == 0)
     print("Load dataset: %s" % args.dataset)
 else:
     raise ValueError("what dataset ?")

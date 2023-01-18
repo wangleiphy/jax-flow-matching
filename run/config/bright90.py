@@ -2,7 +2,7 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'hydrogen'
+nickname = 'npz'
 
 ###############################
 model = 'ferminet'
@@ -13,7 +13,9 @@ nheads = 8
 keysize = 16 
 batchsize = 100
 lr = 1e-3
-dataset = '../data/position.dat'
+
+#dataset = '../data/position.dat'
+dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
 
 ###############################
 prog = '../src/main.py'

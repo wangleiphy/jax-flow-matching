@@ -68,3 +68,24 @@ def divergence_fori(f):
             return val + tangent[i]
         return jax.lax.fori_loop(0, n, _body_fun, 0.0)
     return _div_f
+
+def loaddata(dataset):
+
+    data = jnp.load(dataset)
+    X1 = data['positions']
+    L = data['cell_vectors'][0,0]
+    n, dim = X1.shape[1], X1.shape[2]
+    X1 = X1.reshape(-1, n*dim)
+    assert (n == data['N'])
+
+    #data = np.loadtxt(args.dataset)
+    #datasize, n, dim = 1000, 64, 3
+    #L = data[-1, -1]
+    #X1 = data[:, :-3]
+    #X1 = X1.reshape(datasize, n*dim)
+
+    print (X1.shape, L)
+    print (jnp.min(X1), jnp.max(X1))
+    X1 -= L * jnp.floor(X1/L)
+    
+    return X1, n, dim, L

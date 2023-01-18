@@ -1,10 +1,10 @@
 
 train
 ```bash 
-python main.py --hollow
+python ../src/main.py --folder /data/wanglei/lj/npz/ --nlayers 4 --h1size 256 --h2size 64 --lr 0.001 --batchsize 100 --dataset ../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz --ferminet 
 ```
 
 inference 
 ```bash
-python inference.py --hollow --restore_path ../data/n_32_dim_3_lr_0.001_hollownet_l_4_h_64/
+python ../src/inference.py --nlayers 4 --h1size 256 --h2size 64 --batchsize 100 --dataset ../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz --ferminet  --restore_path /data/wanglei/lj/npz/n_32_dim_3_lr_0.001_ferminet_l_4_h1_256_h2_64/
 ```
