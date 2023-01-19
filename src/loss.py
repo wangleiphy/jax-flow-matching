@@ -2,15 +2,14 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 
-from pt import phasespace_v
+from nct import phasespace_v
 
-def make_loss(vec_field_net, beta):
+def make_loss(potential_net):
 
     @partial(jax.vmap, in_axes=(None, 0, 0, 0), out_axes=0)
     def _matching(params, x0, x1, t):
-        x0 = x0 / jnp.sqrt(beta)
         x = t*x1 + (1 - t)*x0
-        v = phasespace_v(params, vec_field_net, x, t)
+        v = phasespace_v(params, potential_net, x, t)
 
         return jnp.sum(((x1 - x0) - v)**2)
 
