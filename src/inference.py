@@ -4,7 +4,7 @@ from jax.config import config
 config.update("jax_enable_x64", True)
 
 from data import sample_target
-from net import make_potential_net, make_backflow, make_transformer
+from net import make_hamiltonian_net, make_backflow, make_transformer
 from energy import make_energy, make_free_energy
 from train import train
 from nct import make_canonical_transformation
@@ -52,21 +52,21 @@ if __name__ == '__main__':
     key, subkey = jax.random.split(key)
     if args.backflow:
         print ('construct backflow network')
-        v_params, potential_net = make_backflow(subkey, args.n, args.dim, [args.nhiddens]*args.nlayers)
+        v_params, hamiltonian_net = make_backflow(subkey, args.n, args.dim, [args.nhiddens]*args.nlayers)
         modelname = 'backflow_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
     elif args.transformer:
         print ('construct transformer network')
-        v_params, potential_net = make_transformer(subkey, args.n, args.dim, args.nheads, args.nlayers, args.keysize)
+        v_params, hamiltonian_net = make_transformer(subkey, args.n, args.dim, args.nheads, args.nlayers, args.keysize)
         modelname = 'transformer_nl_%d_nh_%d_nk_%d'%(args.nlayers, args.nheads, args.keysize)
     elif args.mlp:
         print ('construct mlp network')
-        v_params, potential_net = make_potential_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers)
+        v_params, hamiltonian_net = make_hamiltonian_net(subkey, args.n, args.dim, ch=args.nhiddens, num_layers=args.nlayers)
         modelname = 'mlp_nl_%d_nh_%d'%(args.nlayers, args.nhiddens)
     else:
         raise ValueError("what model ?")
 
     key, subkey = jax.random.split(key)
-    ct = make_canonical_transformation(potential_net)
+    ct = make_canonical_transformation(hamiltonian_net)
     sample_fn, _ = make_symplectic_flow(ct, 2*args.n*args.dim)
     free_energy_fn = make_free_energy(energy_fn, sample_fn, args.n, args.dim, args.beta)
 

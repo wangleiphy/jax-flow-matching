@@ -20,17 +20,17 @@ def MLP_with_t(n, spatial_dim, ch=384, num_layers=3):
 
     return network
 
-def make_potential_net(rng, n, spatial_dim, ch=512, num_layers=2):
+def make_hamiltonian_net(rng, n, spatial_dim, ch=512, num_layers=2):
 
     model = MLP_with_t(n, spatial_dim, ch, num_layers)
 
-    def potential_net(x, t):
-        input = jnp.concatenate((x,t.reshape(1)))
+    def hamiltonian_net(p, q, t):
+        input = jnp.concatenate((p, q, t.reshape(1)))
         return model(input).sum()
 
-    net = hk.without_apply_rng(hk.transform(potential_net))
+    net = hk.without_apply_rng(hk.transform(hamiltonian_net))
 
-    params = net.init(rng, jnp.ones((n*spatial_dim,)), jnp.ones((1,)))
+    params = net.init(rng, jnp.ones((n*spatial_dim,)), jnp.ones((n*spatial_dim,)), jnp.ones((1,)))
     net_apply = net.apply
 
     return params, net_apply
