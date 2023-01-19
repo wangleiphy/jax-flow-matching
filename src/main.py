@@ -82,7 +82,7 @@ value_and_grad = jax.value_and_grad(loss)
 
 print("\n========== Prepare logs ==========")
 
-path = args.folder + "n_%d_dim_%g_lr_%g" % (n, dim, args.lr) \
+path = args.folder + "n_%d_dim_%g_lr_%g_bs_%g" % (n, dim, args.lr, args.batchsize) \
                     + "_" + modelname
 os.makedirs(path, exist_ok=True)
 print("Create directory: %s" % path)
