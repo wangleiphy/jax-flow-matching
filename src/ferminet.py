@@ -5,6 +5,7 @@ import haiku as hk
 from typing import Optional
 
 from utils import softcore
+from utils import divergence_hutchinson as div
 
 class FermiNet(hk.Module):
 
@@ -88,5 +89,5 @@ def make_ferminet(key, n, dim, depth, h1size, h2size, L):
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)
-    div_fn = lambda params, x, t: div(lambda x: network.apply(params, x, t))(x)
+    div_fn = lambda params, x, t, key: div(lambda x: network.apply(params, x, t))(key, x)
     return params, network.apply, div_fn

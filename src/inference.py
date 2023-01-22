@@ -8,7 +8,7 @@ from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
 
-#from energy import make_energy, make_free_energy
+from energy import make_free_energy
 from flow import make_flow 
 import checkpoint
 import utils 
@@ -41,11 +41,6 @@ group.add_argument("--keysize", type=int, default=16, help="")
 group.add_argument("--h1size", type=int, default=32, help="")
 group.add_argument("--h2size", type=int, default=32, help="")
 
-group = parser.add_argument_group('physics parameters')
-group.add_argument('--n', type=int, default=6, help='The number of particles')
-group.add_argument('--dim', type=int, default=2, help='The dimensions of the system')
-group.add_argument('--beta', type=float, default=1.0, help='inverse temperature')
-
 args = parser.parse_args()
 
 key = jax.random.PRNGKey(42)
@@ -53,7 +48,7 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    X1, n, dim, L = utils.loaddata(args.dataset)
+    X1, n, dim, L, T = utils.loaddata(args.dataset)
     print("Load dataset: %s" % args.dataset)
 else:
     raise ValueError("what dataset ?")
@@ -81,8 +76,7 @@ print("# of params: %d" % raveled_params.size)
 
 key, subkey = jax.random.split(key)
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, n*dim, L)
-#energy_fn = make_energy(args.n, args.dim)
-#free_energy_fn = make_free_energy(energy_fn, sampler_with_logp, args.n, args.dim, args.beta)
+free_energy_fn = make_free_energy(sampler_with_logp, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 
@@ -114,12 +108,8 @@ for t in range(x.shape[1]):
              )
 plt.legend()
 plt.show()
-import sys 
-sys.exit(1)
 
-#fe, fe_err, x, vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
-end = time.time()
-running_time = end - start
+key, subkey = jax.random.split(key)
+vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
 #print('free energy using trained model: %f ± %f' %(fe, fe_err))
-#print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
-#print('importance sampling time: %.5f sec' %running_time)
+print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))

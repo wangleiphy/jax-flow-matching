@@ -21,11 +21,11 @@ def make_flow(vec_field_net, div_fn, dim, L, mxstep=100):
                  )
         return xt
     
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=(0,0))
-    def forward_with_logp(params, x0):
+    @partial(jax.vmap, in_axes=(None, 0, 0), out_axes=(0,0))
+    def forward_with_logp(params, x0, key):
         def _ode(state, t):
             x = state[0]  
-            return vec_field_net(params, x, t), -div_fn(params, x, t)
+            return vec_field_net(params, x, t), -div_fn(params, x, t, key)
         
         logp0 = base_logp(x0)
 
@@ -40,7 +40,8 @@ def make_flow(vec_field_net, div_fn, dim, L, mxstep=100):
     @partial(jax.jit, static_argnums=2)
     def sample_and_logp_fn(key, params, batchsize):
         x0 = jax.random.uniform(key, (batchsize, dim), minval=0, maxval=L)
-        return forward_with_logp(params, x0)
+        subkeys = jax.random.split(key, batchsize)
+        return forward_with_logp(params, x0, subkeys)
 
     @partial(jax.jit, static_argnums=2)
     def sample_fn(key, params, batchsize):

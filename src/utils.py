@@ -74,6 +74,7 @@ def loaddata(dataset):
     data = jnp.load(dataset)
     X1 = data['positions']
     L = data['cell_vectors'][0,0]
+    T = data['T']
     n, dim = X1.shape[1], X1.shape[2]
     X1 = X1.reshape(-1, n*dim)
     assert (n == data['N'])
@@ -88,4 +89,4 @@ def loaddata(dataset):
     print (jnp.min(X1), jnp.max(X1))
     X1 -= L * jnp.floor(X1/L)
     
-    return X1, n, dim, L
+    return X1, n, dim, L, T
