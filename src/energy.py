@@ -100,9 +100,9 @@ def jax_nblist(pos, box):
 
 def make_free_energy(batched_sampler, n, dim, L, T):
 
-    box = jnp.ones((dim, ))*L
     @partial(jax.vmap, in_axes=(0,), out_axes=(0,))
     def energy_fun(pos):
+        box = jnp.ones((dim,))*L
         return lj_efunc(pos, box, jax_nblist(pos, box))
 
     def free_energy(rng, params, sample_size):
@@ -114,7 +114,7 @@ def make_free_energy(batched_sampler, n, dim, L, T):
         #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
         #lnz, lnz_err = -jnp.log(z)/beta, z_err/(z*beta)
         
-        f = e + logp/beta # variational free energy
+        f = e + logp*T # variational free energy
         #return lnz, lnz_err, x, f.mean(), f.std()/jnp.sqrt(x.shape[0])
 
         return f.mean(), f.std()/jnp.sqrt(x.shape[0])
