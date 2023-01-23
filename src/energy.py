@@ -108,13 +108,19 @@ def make_free_energy(batched_sampler, n, dim, L, T):
     def free_energy(rng, params, batchsize):
         
         x, logp = batched_sampler(rng, params, batchsize)
+        x -= L * jnp.floor(x/L)
         e = energy_fun(x.reshape(batchsize, n, dim))
 
         #amount = jnp.exp(- beta * e - logp)
         #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
         #lnz, lnz_err = -jnp.log(z)/beta, z_err/(z*beta)
         
-        f = e + logp*T # variational free energy
+        kB = 8.314463e-3 
+        #print ('e0', energy_fun(X1[:batchsize].reshape(batchsize, n, dim)))
+        print ('e', e)
+        print ('logp', logp)
+        print ('T', T)
+        f = e + logp*kB*T # variational free energy
         #return lnz, lnz_err, x, f.mean(), f.std()/jnp.sqrt(x.shape[0])
 
         return f.mean(), f.std()/jnp.sqrt(batchsize)

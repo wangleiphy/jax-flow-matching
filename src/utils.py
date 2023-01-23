@@ -73,7 +73,9 @@ def loaddata(dataset):
 
     data = jnp.load(dataset)
     X1 = data['positions']
-    L = data['cell_vectors'][0,0]
+    cell = data['cell_vectors']
+    assert (cell[0,0] == cell[1,1] == cell[2,2])
+    L = cell[0,0]
     T = data['T']
     n, dim = X1.shape[1], X1.shape[2]
     X1 = X1.reshape(-1, n*dim)
