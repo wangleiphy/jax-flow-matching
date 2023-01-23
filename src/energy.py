@@ -93,22 +93,22 @@ lj_efunc = generate_energy_function(lennard_jones_energy)
 def jax_nblist(pos, box):
     return jax.pure_callback(
         compute_neighborlist, 
-        jax.ShapeDtypeStruct((160 * pos.shape[-2], 5), np.int32), 
+        jax.ShapeDtypeStruct((160 * pos.shape[-2], 5), np.int64), 
         pos, box,
         vectorized=False
     )
 
 def make_free_energy(batched_sampler, n, dim, L, T):
 
-    @partial(jax.vmap, in_axes=(0,), out_axes=(0,))
+    @partial(jax.vmap, in_axes=0, out_axes=0)
     def energy_fun(pos):
         box = jnp.ones((dim,))*L
         return lj_efunc(pos, box, jax_nblist(pos, box))
 
-    def free_energy(rng, params, sample_size):
+    def free_energy(rng, params, batchsize):
         
-        x, logp = batched_sampler(rng, params, sample_size)
-        e = energy_fun(x)
+        x, logp = batched_sampler(rng, params, batchsize)
+        e = energy_fun(x.reshape(batchsize, n, dim))
 
         #amount = jnp.exp(- beta * e - logp)
         #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
@@ -117,6 +117,24 @@ def make_free_energy(batched_sampler, n, dim, L, T):
         f = e + logp*T # variational free energy
         #return lnz, lnz_err, x, f.mean(), f.std()/jnp.sqrt(x.shape[0])
 
-        return f.mean(), f.std()/jnp.sqrt(x.shape[0])
+        return f.mean(), f.std()/jnp.sqrt(batchsize)
     
     return free_energy
+
+if __name__=='__main__':
+    jax.config.update("jax_enable_x64", True)
+    L = 1.234 
+    n = 32 
+    dim = 3 
+    key = jax.random.PRNGKey(42) 
+
+    @partial(jax.vmap, in_axes=0, out_axes=0)
+    def energy_fun(pos):
+        box = jnp.ones((dim,))*L
+        return lj_efunc(pos, box, jax_nblist(pos, box))
+
+    pos = jax.random.uniform(key, (10, n, dim), minval=0, maxval=L)
+
+    e = energy_fun(pos)
+    print (e)
+

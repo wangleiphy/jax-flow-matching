@@ -49,7 +49,7 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    X1, n, dim, L = utils.loaddata(args.dataset)
+    X1, n, dim, L, _ = utils.loaddata(args.dataset)
     assert (X1.shape[0]% args.batchsize == 0)
     print("Load dataset: %s" % args.dataset)
 else:
