@@ -8,7 +8,7 @@ from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
 
-from energy import make_free_energy
+from energy import make_energy, make_free_energy
 from flow import make_flow 
 import checkpoint
 import utils 
@@ -76,7 +76,8 @@ print("# of params: %d" % raveled_params.size)
 
 key, subkey = jax.random.split(key)
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, n*dim, L)
-free_energy_fn = make_free_energy(sampler_with_logp, n, dim, L, T)
+energy_fn = make_energy(n, dim, L)
+free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 

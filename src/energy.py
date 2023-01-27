@@ -118,7 +118,7 @@ jax_nblist = jax.custom_jvp(jax_nblist)
 @jax_nblist.defjvp
 def _jax_nblist_jvp(primals, tangents):
     val = jax_nblist(*primals)
-    grad = jnp.zeros(val.shape, dtype=np.int32)
+    grad = jnp.zeros(val.shape, dtype=np.int64)
     return val, grad
 
 
@@ -127,17 +127,19 @@ def energy_fun(pos, box):
     return lj_efunc(pos, box, jax_nblist(pos, box))
 
 
-def make_free_energy(batched_sampler, n, dim, L, T):
-    @partial(jax.vmap, in_axes=0, out_axes=0)
-    def energy_fun(pos):
+def make_energy(n, dim, L):
+    def energy_fn(pos):
         box = jnp.ones((dim, )) * L
         return lj_efunc(pos, box, jax_nblist(pos, box))
+    return energy_fn
+
+def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
 
     def free_energy(rng, params, batchsize):
 
         x, logp = batched_sampler(rng, params, batchsize)
         x -= L * jnp.floor(x / L)
-        e = energy_fun(x.reshape(batchsize, n, dim))
+        e = jax.vmap(energy_fn)(x.reshape(batchsize, n, dim))
 
         #amount = jnp.exp(- beta * e - logp)
         #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
@@ -162,13 +164,12 @@ if __name__ == '__main__':
     n = 32
     dim = 3
     key = jax.random.PRNGKey(42)
-
-    @partial(jax.vmap, in_axes=0, out_axes=0)
-    def energy_fun(pos):
-        box = jnp.ones((dim, )) * L
-        return lj_efunc(pos, box, jax_nblist(pos, box))
+    
+    energy_fn = make_energy(n, dim, L)
+    force_fn = jax.grad(energy_fn)
 
     pos = jax.random.uniform(key, (10, n, dim), minval=0, maxval=L)
 
-    e = energy_fun(pos)
+    e = jax.vmap(energy_fn)(pos)
     print(e)
+    print (jax.vmap(force_fn)(pos))
