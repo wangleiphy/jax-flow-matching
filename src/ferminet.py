@@ -4,6 +4,7 @@ import numpy as np
 import haiku as hk
 from typing import Optional
 
+from utils import softcore
 from utils import divergence_hutchinson as div
 
 class FermiNet(hk.Module):
@@ -79,8 +80,10 @@ class FermiNet(hk.Module):
         h1 = jnp.tanh(self.fc1[-1](f)) + h1
 
         final = hk.Linear(dim, w_init=hk.initializers.TruncatedNormal(self.init_stddev), with_bias=False)
-        alpha = hk.nets.MLP([16, 1], activation=jax.nn.sigmoid, activate_final=True)
-        return final(h1) - alpha(t.reshape(1,)) * jax.grad(self.energy_fn)(x)
+        alpha = hk.nets.MLP([64, 1], activation=jax.nn.softplus, w_init=hk.initializers.TruncatedNormal(self.init_stddev))
+        force = jax.grad(self.energy_fn)(x)
+        force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
+        return final(h1) - jax.nn.softplus(alpha(t.reshape(1,))-4)*force
 
 def make_ferminet(key, n, dim, depth, h1size, h2size, L, energy_fn):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
