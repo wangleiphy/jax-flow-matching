@@ -2,7 +2,7 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'force'
+nickname = 'force-mha'
 
 ###############################
 model = 'ferminet'

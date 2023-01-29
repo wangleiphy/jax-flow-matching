@@ -10,7 +10,7 @@ def test_symmetry():
     L = 1.234
 
     key = jax.random.PRNGKey(42)
-    params, network, _ = make_ferminet(key, n, dim, depth, h1size, h2size, L)
+    params, network, _ = make_ferminet(key, n, dim, depth, h1size, h2size, L, lambda x: jnp.sum(x**2))
    
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)
