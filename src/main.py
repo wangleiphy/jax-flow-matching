@@ -53,6 +53,7 @@ if os.path.isfile(args.dataset):
     X1, n, dim, L, _ = utils.loaddata(args.dataset)
     assert (X1.shape[0]% args.batchsize == 0)
     print("Load dataset: %s" % args.dataset)
+    dataname = os.path.splitext(os.path.basename(args.dataset))[0]
 else:
     raise ValueError("what dataset ?")
 ####################################################################################
@@ -85,8 +86,9 @@ value_and_grad = jax.value_and_grad(loss)
 
 print("\n========== Prepare logs ==========")
 
-path = args.folder + "n_%d_dim_%g_lr_%g_bs_%g" % (n, dim, args.lr, args.batchsize) \
-                    + "_" + modelname
+path = args.folder + dataname \
+                   + "_" + modelname \
+                   + "lr_%g_bs_%g" % (args.lr, args.batchsize) 
 os.makedirs(path, exist_ok=True)
 print("Create directory: %s" % path)
 
