@@ -59,7 +59,11 @@ class FermiNet(hk.Module):
 
         n, dim = x.shape[0], x.shape[1]
 
-        h1 = jnp.full((n, dim), t)
+        h1 = [jnp.full((n, 1), t)]
+        for f in range(1, self.Nf+1):
+            h1 += [jnp.full((n, 1), jnp.cos(2*np.pi*t*f)), 
+                   jnp.full((n, 1), jnp.sin(2*np.pi*t*f))]
+        h1 = jnp.concatenate(h1, axis=-1)
         h2 = self._h2(x)
 
         for d in range(self.depth-1):
