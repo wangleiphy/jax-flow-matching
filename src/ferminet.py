@@ -84,14 +84,12 @@ class FermiNet(hk.Module):
         h1 = jnp.tanh(self.fc1[-1](f)) + h1
 
         final = hk.Linear(dim, w_init=hk.initializers.TruncatedNormal(self.init_stddev), with_bias=False)
-        return final(h1)
         
-        '''
         alpha = jax.nn.softplus(h1[:, -1] -4).reshape(n, 1)
-        force = jax.grad(self.energy_fn)(x)
-        force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
+        force = jax.grad(softcore)(x, self.L)
+        #force = jax.grad(self.energy_fn)(x)
+        #force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
         return final(h1[:, :-1]) - alpha*force
-        '''
 
 def make_ferminet(key, n, dim, depth, h1size, h2size, L, energy_fn):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
