@@ -101,5 +101,5 @@ def make_ferminet(key, n, dim, depth, h1size, h2size, L, energy_fn):
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)
-    div_fn = lambda params, x, t, key: div(lambda x: network.apply(params, x, t))(key, x)
+    div_fn = lambda _params, _x, _t, _v: div(lambda _x: network.apply(_params, _x, _t))(_v, _x)
     return params, network.apply, div_fn

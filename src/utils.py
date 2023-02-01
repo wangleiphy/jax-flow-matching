@@ -41,8 +41,7 @@ def divergence_fwd(f):
     return _div_f
 
 def divergence_hutchinson(f):
-    def _div_f(key, x):
-        v = jax.random.normal(key, x.shape)
+    def _div_f(v, x):
         _, jvp = jax.jvp(f, (x,), (v,))
         return (jvp * v).sum()
     return _div_f

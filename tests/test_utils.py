@@ -23,8 +23,8 @@ def test_div():
     assert jnp.allclose(div1, div_fori)
     
     batchsize = 4096
-    keys = jax.random.split(key, batchsize)
-    div2 = jax.vmap(divergence_hutchinson(f), (0, None))(keys, x)
+    v = jax.random.normal(key, (batchsize, n))
+    div2 = jax.vmap(divergence_hutchinson(f), (0, None))(v, x)
 
     print (div1)
     print (jnp.mean(div2), '+/-', jnp.std(div2)/jnp.sqrt(batchsize))

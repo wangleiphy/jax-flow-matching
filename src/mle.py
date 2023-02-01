@@ -7,27 +7,28 @@ import numpy as np
 from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
-
-from energy import make_energy, make_free_energy
-from flow import make_flow 
-import checkpoint
-import utils 
-import matplotlib.pyplot as plt 
-
-import os
-import time
+from energy import make_energy
+from train import train2 as train
+from loss import make_mle_loss 
+from flow import make_flow
+import utils
 
 import argparse
-parser = argparse.ArgumentParser(description='')
+import time
+import os
 
-group = parser.add_argument_group('learning parameters')
-group.add_argument('--batchsize', type=int, default=4096, help='')
+####################################################################################
 
-group = parser.add_argument_group('filesystem')
-group.add_argument("--restore_path", default=None, help="checkpoint path or file")
+parser = argparse.ArgumentParser(description="")
+
+group = parser.add_argument_group("learning parameters")
+group.add_argument("--epochs", type=int, default=100000, help="Epochs for training")
+group.add_argument("--batchsize", type=int, default=1000, help="")
+group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
+group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--dataset", default="../data/LJSystem_npy/liquid/traj_N32_rho0.7_T1.0.npy",help="The path to training dataset")
+group.add_argument("--dataset", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
@@ -43,17 +44,23 @@ group.add_argument("--h2size", type=int, default=32, help="")
 
 args = parser.parse_args()
 
+####################################################################################
+
 key = jax.random.PRNGKey(42)
 
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
-    X1, n, dim, L, T = utils.loaddata(args.dataset)
+    X1, n, dim, L, _ = utils.loaddata(args.dataset)
+    assert (X1.shape[0]% args.batchsize == 0)
     print("Load dataset: %s" % args.dataset)
+    dataname = os.path.splitext(os.path.basename(args.dataset))[0]
 else:
     raise ValueError("what dataset ?")
 ####################################################################################
+
 energy_fn = make_energy(n, dim, L)
+
 key, subkey = jax.random.split(key)
 
 if args.transformer:
@@ -67,49 +74,34 @@ elif args.ferminet:
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
     params, vec_field_net, div_fn = make_hollow_net(subkey, n, dim, L, args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
-    modelname = "hollownet_n_%d_k_%d_h1_%d_h2_%d_l_%d" % (args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
+    modelname = "hollownet_nh_%d_k_%d_h1_%d_h2_%d_l_%d" % (args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
 else:
     raise ValueError("what model ?")
 
 raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
-key, subkey = jax.random.split(key)
-sampler, sampler_with_logp, _ = make_flow(vec_field_net, div_fn, n*dim, L)
-free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
+_, _, logp_fn = make_flow(vec_field_net, div_fn, n*dim, L)
+loss_fn = make_mle_loss(logp_fn)
+value_and_grad = jax.value_and_grad(loss_fn)
+####################################################################################
 
 print("\n========== Prepare logs ==========")
 
-folder = os.path.dirname(args.restore_path)
-ckpt_filename, epoch_finished = checkpoint.find_ckpt_filename(args.restore_path)
+path = args.folder + dataname \
+                   + "_" + modelname \
+                   + "lr_%g_bs_%g" % (args.lr, args.batchsize) 
+os.makedirs(path, exist_ok=True)
+print("Create directory: %s" % path)
 
-print ('folder:', folder)
-if ckpt_filename is not None:
-    print("Load checkpoint file: %s, epoch finished: %g" %(ckpt_filename, epoch_finished))
-    ckpt = checkpoint.load_data(ckpt_filename)
-    params = ckpt["params"]
-else:
-    raise ValueError("no checkpoint found")
+####################################################################################
 
-print("\n========== Start inference ==========")
+print("\n========== Train ==========")
+
 start = time.time()
-key, subkey = jax.random.split(key)
-x = sampler(subkey, params, args.batchsize)
-print ('sample shape', x.shape)
+params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, L)
+end = time.time()
+running_time = end - start
+print("training time: %.5f sec" %running_time)
 
-rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
-print ('data shape', X1.shape)
-plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
-for t in range(x.shape[1]):
-    rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
-    plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
-             label='model@t=%g'%(t/(x.shape[1]-1)),
-             alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
-             )
-plt.legend()
-plt.show()
-
-key, subkey = jax.random.split(key)
-vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
-#print('free energy using trained model: %f ± %f' %(fe, fe_err))
-print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
+####################################################################################

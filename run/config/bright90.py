@@ -2,7 +2,7 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'npz-1-t2'
+nickname = 'mle'
 
 ###############################
 model = 'ferminet'
@@ -15,12 +15,12 @@ batchsize = 100
 lr = 1e-3
 
 #dataset = '../data/position.dat'
-#dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
-dataset = '../data/LJSystem_npz/liquid/traj_N108_rho0.7_T1.0.npz'
+dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
+#dataset = '../data/LJSystem_npz/liquid/traj_N108_rho0.7_T1.0.npz'
 #dataset = '../data/LJSystem_npz/fcc/traj_N32_rho1.1_T1.1.npz'
 
 ###############################
-prog = '../src/main.py'
+prog = '../src/mle.py'
 resfolder = '/data/wanglei/lj/' + nickname  + '/' 
 
 def submitJob(bin,args,jobname,logname,run=False,wait=None):
@@ -42,6 +42,7 @@ def submitJob(bin,args,jobname,logname,run=False,wait=None):
 
     job += '''
 #export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export JAX_CHECK_TRACER_LEAKS=true
 echo "The current job ID is $SLURM_JOB_ID"
 echo "Running on $SLURM_JOB_NUM_NODES nodes:"
 echo $SLURM_JOB_NODELIST

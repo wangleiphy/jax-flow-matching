@@ -34,3 +34,9 @@ def make_loss(vec_field_net, L):
         return jnp.mean(m)
 
     return loss
+
+def make_mle_loss(logp_fn):
+    def loss_fn(params, x, key):
+        logp = logp_fn(params, x, key)
+        return -jnp.mean(logp)
+    return loss_fn
