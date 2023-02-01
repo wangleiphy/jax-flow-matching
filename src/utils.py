@@ -19,20 +19,33 @@ def get_gr(x, L, bins=100):
     h_id = 4/3*np.pi*n/(L**3)* ((rmesh+dr)**3 - rmesh**3 )
     return rmesh, hist/h_id
 
-def softcore(x, L):
-    '''
-    a pretty arbitary soft core potential whose force we added to the learned velocity field to push particles apart 
-    '''
-    n, dim = x.shape
-    i, j = jnp.triu_indices(n, k=1)
-    rij = (jnp.reshape(x, (n, 1, dim)) - jnp.reshape(x, (1, n, dim)))[i, j]
-    rij = rij - L * jnp.rint(rij/L)
-    r = jnp.linalg.norm(rij, axis=-1)
+def make_pairwise_potential(L): 
 
-    _f = lambda r: 2*jnp.exp(-2.5*r)
-    _v = lambda r: (_f(r) + _f(L-r) - 2*_f(L/2))*(r<=L/2) + 0.0*(r>L/2)
+    def _yukawa(r):
+        '''
+        a pretty arbitary soft core potential whose force we added to the learned velocity field to push particles apart 
+        '''
+        return 2*jnp.exp(-2.5*r)
 
-    return jnp.sum(jax.vmap(_v)(r))
+    def _lj(r):
+        r2 = r*r  
+        one_R2 = 1.0 / r2
+        sig_R2 = one_R2 * 0.3419 * 0.3419
+        epairs = 2. * 0.2341 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
+        return epairs
+
+    f = _lj
+    v = lambda r: (f(r) + f(L-r) - 2*f(L/2))*(r<=L/2) + 0.0*(r>L/2)
+
+    def energy_fn(x):
+        n, dim = x.shape
+        i, j = jnp.triu_indices(n, k=1)
+        rij = (jnp.reshape(x, (n, 1, dim)) - jnp.reshape(x, (1, n, dim)))[i, j]
+        rij = rij - L * jnp.rint(rij/L)
+        r = jnp.linalg.norm(rij, axis=-1)
+        return jnp.sum(jax.vmap(v)(r))
+
+    return energy_fn 
 
 def divergence_fwd(f):
     def _div_f(x):

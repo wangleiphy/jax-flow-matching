@@ -58,8 +58,6 @@ else:
     raise ValueError("what dataset ?")
 ####################################################################################
 
-energy_fn = make_energy(n, dim, L)
-
 key, subkey = jax.random.split(key)
 
 if args.transformer:
@@ -68,7 +66,7 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, _ = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, energy_fn)
+    params, vec_field_net, _ = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L)
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")

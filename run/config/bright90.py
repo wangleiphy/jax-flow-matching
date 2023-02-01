@@ -2,7 +2,7 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'mle'
+nickname = 'force'
 
 ###############################
 model = 'ferminet'
@@ -11,7 +11,7 @@ h1size = 256
 h2size = 64
 nheads = 8
 keysize = 16 
-batchsize = 100
+batchsize = 1000
 lr = 1e-3
 
 #dataset = '../data/position.dat'
@@ -20,7 +20,7 @@ dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
 #dataset = '../data/LJSystem_npz/fcc/traj_N32_rho1.1_T1.1.npz'
 
 ###############################
-prog = '../src/mle.py'
+prog = '../src/main.py'
 resfolder = '/data/wanglei/lj/' + nickname  + '/' 
 
 def submitJob(bin,args,jobname,logname,run=False,wait=None):

@@ -4,7 +4,7 @@ import numpy as np
 import haiku as hk
 from typing import Optional
 
-from utils import softcore
+from utils import make_pairwise_potential
 from utils import divergence_hutchinson as div
 
 class FermiNet(hk.Module):
@@ -15,7 +15,6 @@ class FermiNet(hk.Module):
                  h2_size:int, 
                  Nf:int,
                  L:float,
-                 energy_fn, 
                  init_stddev:float = 0.01,
                  name: Optional[str] = None
                  ):
@@ -25,7 +24,7 @@ class FermiNet(hk.Module):
         self.Nf = Nf
         self.L = L
         self.init_stddev = init_stddev
-        self.energy_fn = energy_fn
+        self.energy_fn = make_pairwise_potential(L)
   
         self.fc1 = [hk.Linear(h1_size, w_init=hk.initializers.TruncatedNormal(self.init_stddev)) for d in range(depth)]
         self.fc2 = [hk.Linear(h2_size, w_init=hk.initializers.TruncatedNormal(self.init_stddev)) for d in range(depth-1)]
@@ -86,18 +85,17 @@ class FermiNet(hk.Module):
         final = hk.Linear(dim*2, w_init=hk.initializers.TruncatedNormal(self.init_stddev), with_bias=False)
         alpha = final(h1)
         
-        force = jax.grad(softcore)(x, self.L)
-        #force = jax.grad(self.energy_fn)(x)
-        #force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
+        force = jax.grad(self.energy_fn)(x)
+        force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
 
         return alpha[:, :dim] - alpha[:, dim:]*force
 
-def make_ferminet(key, n, dim, depth, h1size, h2size, L, energy_fn):
+def make_ferminet(key, n, dim, depth, h1size, h2size, L):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)
 
     def forward_fn(x, t):
-        net = FermiNet(depth, h1size, h2size, 5, L, energy_fn)
+        net = FermiNet(depth, h1size, h2size, 5, L)
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)
