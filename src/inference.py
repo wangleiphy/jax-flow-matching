@@ -35,7 +35,6 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
 group.add_argument("--transformer", action="store_true", help="Use transformer")
 group.add_argument("--ferminet", action="store_true", help="Use ferminet")
-group.add_argument("--fmax", type=float, default=1e5, help="clip force")
 
 group = parser.add_argument_group("network parameters")
 group.add_argument("--nlayers", type=int, default=2, help="The number of layers")
@@ -43,6 +42,7 @@ group.add_argument("--nheads", type=int, default=8, help="")
 group.add_argument("--keysize", type=int, default=16, help="")
 group.add_argument("--h1size", type=int, default=32, help="")
 group.add_argument("--h2size", type=int, default=32, help="")
+group.add_argument("--fmax", type=float, default=1e5, help="clip force")
 
 args = parser.parse_args()
 
