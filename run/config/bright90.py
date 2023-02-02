@@ -2,7 +2,7 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'force'
+nickname = 'force-unclip'
 
 ###############################
 model = 'ferminet'
@@ -13,6 +13,7 @@ nheads = 8
 keysize = 16 
 batchsize = 1000
 lr = 1e-3
+fmax = 1e5
 
 #dataset = '../data/position.dat'
 dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'

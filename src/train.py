@@ -50,6 +50,7 @@ def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
             total_loss += loss
             counter += 1
 
+        print (epoch, total_loss/counter)
         f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )
 
         if epoch % 100 == 0:

@@ -10,10 +10,12 @@ from hollow import make_hollow_net
 
 from energy import make_energy, make_free_energy
 from flow import make_flow 
+from loss import make_loss
 import checkpoint
 import utils 
 import matplotlib.pyplot as plt 
 
+import sys
 import os
 import time
 
@@ -92,7 +94,18 @@ else:
     raise ValueError("no checkpoint found")
 
 print("\n========== Start inference ==========")
-start = time.time()
+'''
+key, key_x0, key_t = jax.random.split(key, 3)
+x1 = X1[:args.batchsize]
+x0 = jax.random.uniform(key_x0, x1.shape, minval=0, maxval=L)
+t = jax.random.uniform(key_t, (args.batchsize,))
+_, loss_fn = make_loss(vec_field_net, L)
+loss = loss_fn(params, x0, x1, t)
+print (t.shape, loss.shape)
+plt.plot(t, loss, 'o')
+plt.show()
+'''
+
 key, subkey = jax.random.split(key)
 x = sampler(subkey, params, args.batchsize)
 print ('sample shape', x.shape)
@@ -106,8 +119,10 @@ for t in range(x.shape[1]):
              label='model@t=%g'%(t/(x.shape[1]-1)),
              alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
              )
+plt.title('epoch=%g'%epoch_finished)
 plt.legend()
 plt.show()
+sys.exit(0)
 
 key, subkey = jax.random.split(key)
 vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)

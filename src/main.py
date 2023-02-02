@@ -24,6 +24,7 @@ group = parser.add_argument_group("learning parameters")
 group.add_argument("--epochs", type=int, default=100000, help="Epochs for training")
 group.add_argument("--batchsize", type=int, default=1000, help="")
 group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
+group.add_argument("--fmax", type=float, default=1e5, help="clip force")
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
@@ -66,7 +67,7 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, _ = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L)
+    params, vec_field_net, _ = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, args.fmax)
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
@@ -86,7 +87,7 @@ print("\n========== Prepare logs ==========")
 
 path = args.folder + dataname \
                    + "_" + modelname \
-                   + "lr_%g_bs_%g" % (args.lr, args.batchsize) 
+                   + "_lr_%g_fmax_%g_bs_%g" % (args.lr, args.fmax, args.batchsize) 
 os.makedirs(path, exist_ok=True)
 print("Create directory: %s" % path)
 

@@ -15,6 +15,7 @@ class FermiNet(hk.Module):
                  h2_size:int, 
                  Nf:int,
                  L:float,
+                 fmax:float, 
                  init_stddev:float = 0.01,
                  name: Optional[str] = None
                  ):
@@ -25,6 +26,7 @@ class FermiNet(hk.Module):
         self.L = L
         self.init_stddev = init_stddev
         self.energy_fn = make_pairwise_potential(L)
+        self.fmax = fmax
   
         self.fc1 = [hk.Linear(h1_size, w_init=hk.initializers.TruncatedNormal(self.init_stddev)) for d in range(depth)]
         self.fc2 = [hk.Linear(h2_size, w_init=hk.initializers.TruncatedNormal(self.init_stddev)) for d in range(depth-1)]
@@ -86,16 +88,16 @@ class FermiNet(hk.Module):
         alpha = final(h1)
         
         force = jax.grad(self.energy_fn)(x)
-        force = jnp.clip(force, a_min = -1e4, a_max = 1e4)
+        force = jnp.clip(force, a_min = -self.fmax, a_max = self.fmax)
 
         return alpha[:, :dim] - jnp.exp(alpha[:, dim:])*force
 
-def make_ferminet(key, n, dim, depth, h1size, h2size, L):
+def make_ferminet(key, n, dim, depth, h1size, h2size, L, fmax):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)
 
     def forward_fn(x, t):
-        net = FermiNet(depth, h1size, h2size, 5, L)
+        net = FermiNet(depth, h1size, h2size, 5, L, fmax)
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)

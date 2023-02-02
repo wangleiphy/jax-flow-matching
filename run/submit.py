@@ -41,6 +41,7 @@ if __name__=='__main__':
                         'keysize':keysize, 
                         'nheads':nheads,
                         'lr':lr, 
+                        'fmax':fmax,
                         'batchsize': batchsize,
                         'dataset':dataset
                         }
