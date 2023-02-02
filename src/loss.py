@@ -7,7 +7,7 @@ def make_loss(vec_field_net, L):
     @partial(jax.vmap, in_axes=(None, 0, 0, 0), out_axes=0)
     def _matching(params, x0, x1, t):
         def circular_interpolation(x0, x1, t, L):
-            if False:
+            if True:
                 diff = x1-x0 
                 return jnp.where(jnp.abs(diff)<L/2, 
                                  x0 + t*diff, 

@@ -86,7 +86,7 @@ class FermiNet(hk.Module):
         alpha = final(h1)
         
         force = jax.grad(self.energy_fn)(x)
-        force = jnp.clip(force, a_min = -10.0, a_max = 10.0)
+        force = jnp.clip(force, a_min = -1e4, a_max = 1e4)
 
         return alpha[:, :dim] - jnp.exp(alpha[:, dim:])*force
 
