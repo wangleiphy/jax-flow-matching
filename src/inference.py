@@ -35,6 +35,7 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
 group.add_argument("--transformer", action="store_true", help="Use transformer")
 group.add_argument("--ferminet", action="store_true", help="Use ferminet")
+group.add_argument("--fmax", type=float, default=1e5, help="clip force")
 
 group = parser.add_argument_group("network parameters")
 group.add_argument("--nlayers", type=int, default=2, help="The number of layers")
@@ -63,7 +64,7 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L)
+    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, args.fmax)
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
