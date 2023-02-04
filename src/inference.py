@@ -123,9 +123,7 @@ for t in range(x.shape[1]):
 plt.title('epoch=%g'%epoch_finished)
 plt.legend()
 plt.show()
-sys.exit(0)
 
 key, subkey = jax.random.split(key)
 vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
-#print('free energy using trained model: %f ± %f' %(fe, fe_err))
 print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
