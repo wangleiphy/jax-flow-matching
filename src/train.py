@@ -12,15 +12,14 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
+def train(key, value_and_grad, nepoch, batchsize, params, X0, X1, lr, path, L):
 
-    assert (len(data)%batchsize==0)
+    assert (len(X1)%batchsize==0)
 
     @jax.jit
-    def step(key, i, state, x1):
-        key, key_x0, key_t = jax.random.split(key, 3)
-        x0 = jax.random.uniform(key_x0, x1.shape, minval=0, maxval=L)
-        t = jax.random.uniform(key_t, (batchsize,))
+    def step(key, i, state, x0, x1):
+        key, subkey = jax.random.split(key)
+        t = jax.random.uniform(subkey, (batchsize,))
 
         value, grad = value_and_grad(state.params, x0, x1, t)
 
@@ -38,19 +37,24 @@ def train(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):
     itercount = itertools.count()
     for epoch in range(1, nepoch+1):
         key, subkey = jax.random.split(key)
-        data = jax.random.permutation(subkey, data)
+
+        X0 = jax.random.permutation(subkey, X0)
+        X1 = jax.random.permutation(subkey, X1)
 
         total_loss = 0.0
         counter = 0 
-        for batch_index in range(0, len(data), batchsize):
-            x1 = data[batch_index:batch_index+batchsize]
-
+        for batch_index in range(0, len(X1), batchsize):
             key, subkey = jax.random.split(key)
-            state, loss = step(subkey, next(itercount), state, x1)
+            state, loss = step(subkey, 
+                               next(itercount), 
+                               state, 
+                               X0[batch_index:batch_index+batchsize],
+                               X1[batch_index:batch_index+batchsize]
+                               )
             total_loss += loss
             counter += 1
 
-        print (epoch, total_loss/counter)
+        #print (epoch, total_loss/counter)
         f.write( ("%6d" + "  %.6f" + "\n") % (epoch, total_loss/counter) )
 
         if epoch % 100 == 0:

@@ -49,7 +49,10 @@ if __name__=='__main__':
  
                 logname = jobdir
                 for key, val in args.items():
-                    if key != 'folder' and key !='dataset':
+                    if key != 'folder':
+                        if key == 'dataset':
+                            key = ''
+                            val = os.path.splitext(os.path.basename(val))[0]
                         k = str(key)
                         if '_' in k:
                             k = ''.join([s[0] for s in k.split('_')])

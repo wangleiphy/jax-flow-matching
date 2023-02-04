@@ -10,6 +10,7 @@ from hollow import make_hollow_net
 from energy import make_energy
 from loss import make_loss
 from train import train
+from hungarian import matching
 import utils
 
 import argparse
@@ -24,7 +25,7 @@ group = parser.add_argument_group("learning parameters")
 group.add_argument("--epochs", type=int, default=100000, help="Epochs for training")
 group.add_argument("--batchsize", type=int, default=1000, help="")
 group.add_argument("--lr", type=float, default=1e-3, help="learning rate")
-group.add_argument("--fmax", type=float, default=1e5, help="clip force")
+group.add_argument("--fmax", type=float, default=1e3, help="clip force")
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
@@ -55,6 +56,23 @@ if os.path.isfile(args.dataset):
     assert (X1.shape[0]% args.batchsize == 0)
     print("Load dataset: %s" % args.dataset)
     dataname = os.path.splitext(os.path.basename(args.dataset))[0]
+    
+    key, subkey = jax.random.split(key)
+    X0 = jax.random.uniform(subkey, X1.shape, minval=0, maxval=L)
+    
+    def dist_fn(x0, x1):
+        rij = jnp.reshape(x0, (n, dim)) - jnp.reshape(x1, (n, dim))
+        rij = rij - L*jnp.rint(rij/L)
+        r = jnp.linalg.norm(rij, axis=-1) #(n, )
+        return r*r
+
+    print ('total dist before:', jax.vmap(dist_fn)(X0, X1).sum())
+    from tqdm import tqdm
+    for b in tqdm(range(len(X0))):
+        _, x1 = matching(X0[b].reshape(n, dim), X1[b].reshape(n, dim), L)
+        X1 = X1.at[b].set( jnp.reshape(x1, (n*dim, )))
+    print ('total dist after:', jax.vmap(dist_fn)(X0, X1).sum())
+
 else:
     raise ValueError("what dataset ?")
 ####################################################################################
@@ -96,7 +114,7 @@ print("Create directory: %s" % path)
 print("\n========== Train ==========")
 
 start = time.time()
-params = train(key, value_and_grad, args.epochs, args.batchsize, params, X1, args.lr, path, L)
+params = train(key, value_and_grad, args.epochs, args.batchsize, params, X0, X1, args.lr, path, L)
 end = time.time()
 running_time = end - start
 print("training time: %.5f sec" %running_time)
