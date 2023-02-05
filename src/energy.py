@@ -151,6 +151,13 @@ def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
         print('logp', logp)
         print('T', T)
         f = e + logp * kB * T  # variational free energy
+        print ('f', f)
+        beta = 1/(kB*T)
+        print ('beta', beta)
+        print ('log-normal correction', -jnp.var(beta*f)/(2*beta))
+        #import matplotlib.pyplot as plt
+        #plt.hist(f, bins=50)
+        #plt.show()
         #return lnz, lnz_err, x, f.mean(), f.std()/jnp.sqrt(x.shape[0])
 
         return f.mean(), f.std() / jnp.sqrt(batchsize)

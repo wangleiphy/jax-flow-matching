@@ -49,7 +49,7 @@ def make_hollow_net(key, n, dim, L, nheads, keysize, h1size, h2size, nlayers):
         out = hk.vmap(transformer, in_axes=(0,0,None), out_axes=0, split_rng=False)(x,h,t) # (n, d)
         return out.reshape(n*dim)
 
-    def divergence_fn(params, x, t):
+    def divergence_fn(params, x, t, _):
         f = lambda x: hollow_net.apply(params, x, t)
         _, jvp = jax.jvp(f, (x,), (jnp.ones_like(x),))
         return jnp.sum(jvp)

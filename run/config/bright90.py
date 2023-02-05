@@ -2,10 +2,10 @@ import subprocess
 import numpy as np 
 import time 
 
-nickname = 'force-unclip-paired-L'
+nickname = 'force-unclip-paired-hungarian-L'
 
 ###############################
-model = 'ferminet'
+model = 'hollow'
 nlayers = 4
 h1size = 256
 h2size = 64
@@ -13,11 +13,11 @@ nheads = 8
 keysize = 16 
 batchsize = 1000
 lr = 1e-3
-fmax = 1e3
+fmax = 0.0
 
 #dataset = '../data/position.dat'
-#dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
-dataset = '../data/LJSystem_npz/fcc/traj_N32_rho1.1_T1.1.npz'
+dataset = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
+#dataset = '../data/LJSystem_npz/fcc/traj_N32_rho1.1_T1.1.npz'
 #dataset = '../data/LJSystem_npz/liquid/traj_N108_rho0.7_T1.0.npz'
 
 ###############################
@@ -28,7 +28,7 @@ def submitJob(bin,args,jobname,logname,run=False,wait=None):
 
     #prepare the job file 
     job='''#!/bin/bash -l
-#SBATCH --partition=a400
+#SBATCH --partition=v100
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
 #SBATCH --time=100:00:00
