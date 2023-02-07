@@ -133,11 +133,12 @@ def make_energy(n, dim, L):
         return lj_efunc(pos, box, jax_nblist(pos, box))
     return energy_fn
 
-def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
+def make_free_energy(batched_sampler, energy_fn, logp_fn, n, dim, L, T):
 
-    def free_energy(rng, params, batchsize):
+    kT = 8.314463e-3*T
+    def free_energy_ub(key, params, batchsize):
 
-        x, logp = batched_sampler(rng, params, batchsize)
+        x, logp = batched_sampler(key, params, batchsize)
         x -= L * jnp.floor(x / L)
         e = jax.vmap(energy_fn)(x.reshape(batchsize, n, dim))
 
@@ -145,16 +146,15 @@ def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
         #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
         #lnz, lnz_err = -jnp.log(z)/beta, z_err/(z*beta)
 
-        kB = 8.314463e-3
         #print ('e0', energy_fun(X1[:batchsize].reshape(batchsize, n, dim)))
-        print('e', e)
-        print('logp', logp)
-        print('T', T)
-        f = e + logp * kB * T  # variational free energy
-        print ('f', f)
-        beta = 1/(kB*T)
-        print ('beta', beta)
-        print ('log-normal correction', -jnp.var(beta*f)/(2*beta))
+        #print('e', e)
+        #print('logp', logp)
+        #print('T', T)
+        f = e + logp * kT  # variational free energy
+        #print ('f', f)
+        #beta = 1/(kT)
+        #print ('beta', beta)
+        #print ('log-normal correction', -jnp.var(beta*f)/(2*beta))
         #import matplotlib.pyplot as plt
         #plt.hist(f, bins=50)
         #plt.show()
@@ -162,7 +162,14 @@ def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
 
         return f.mean(), f.std() / jnp.sqrt(batchsize)
 
-    return free_energy
+    def free_energy_lb(key, params, x):
+        batchsize = x.shape[0]
+        x -= L * jnp.floor(x / L)
+        e = jax.vmap(energy_fn)(x.reshape(batchsize, n, dim))
+        f = e + logp_fn(params, x, key) * kT
+        return f.mean(), f.std() / jnp.sqrt(batchsize)
+
+    return free_energy_ub, free_energy_lb
 
 
 if __name__ == '__main__':

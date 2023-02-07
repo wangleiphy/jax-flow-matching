@@ -52,6 +52,7 @@ print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.dataset):
     X1, n, dim, L, T = utils.loaddata(args.dataset)
+    X1 = jax.random.permutation(key, X1)
     print("Load dataset: %s" % args.dataset)
 else:
     raise ValueError("what dataset ?")
@@ -77,9 +78,9 @@ raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
 key, subkey = jax.random.split(key)
-sampler, sampler_with_logp, _ = make_flow(vec_field_net, div_fn, n*dim, L)
+sampler, sampler_with_logp, logp_fn = make_flow(vec_field_net, div_fn, n*dim, L)
 energy_fn = make_energy(n, dim, L)
-free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
+fub_fn, flb_fn = make_free_energy(sampler_with_logp, energy_fn, logp_fn, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 
@@ -125,5 +126,9 @@ plt.legend()
 plt.show()
 
 key, subkey = jax.random.split(key)
-vfe, vfe_err = free_energy_fn(subkey, params, args.batchsize)
-print('variational free energy using trained model: %f ± %f' %(vfe, vfe_err))
+vfe, vfe_err = fub_fn(subkey, params, args.batchsize)
+print('variational free energy upper bound: %f ± %f' %(vfe, vfe_err))
+
+subkeys = jax.random.split(key, args.batchsize)
+vfe, vfe_err = flb_fn(subkeys, params, X1[:args.batchsize])
+print('variational free energy lower bound: %f ± %f' %(vfe, vfe_err))
