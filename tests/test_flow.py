@@ -1,7 +1,6 @@
 from config import *
 from transformer import make_transformer 
 from flow import make_flow
-from loss import make_mle_loss
 
 def test_logp():
 
@@ -15,27 +14,27 @@ def test_logp():
 
     key = jax.random.PRNGKey(42)
 
+    subkey0, subkey1, key = jax.random.split(key, 3)
+    X0 = jax.random.normal(subkey0, (batchsize, n*dim))
+    X1 = jax.random.normal(subkey1, (batchsize, n*dim))
+
     params, network, div_fn = make_transformer(key, n, dim, nheads, nlayers, keysize, L)
-    sampler, sampler_with_logp, logp_fn = make_flow(network, div_fn, n*dim, L)
+    sampler, sampler_with_logp = make_flow(network, div_fn, X0, X1)
     
     key, subkey = jax.random.split(key)
 
-    x = sampler(subkey, params, batchsize)
+    x = sampler(subkey, params, batchsize, True)
     assert (x.shape == (batchsize, 5, n*dim))
 
-    x, logp = sampler_with_logp(subkey, params, batchsize)
-    assert (x.shape == (batchsize, n*dim))
+    key, subkey = jax.random.split(key)
+    x0, x1, logp = sampler_with_logp(subkey, params, batchsize, True)
+    assert (x0.shape == (batchsize, n*dim))
+    assert (x1.shape == (batchsize, n*dim))
     assert (logp.shape == (batchsize, ))
-    subkeys = jax.random.split(key, batchsize)
-
-    logp_inference = logp_fn(params, x, subkeys)
-    assert (logp_inference.shape == (batchsize, ))
     print (logp)
-    print (logp_inference)
 
-    #assert jnp.allclose(logp, logp_inference)
-    
-    loss_fn = make_mle_loss(logp_fn)
-    g = jax.grad(loss_fn)(params, x, subkeys)
+    key, subkey = jax.random.split(key)
+    x1, x0, logp = sampler_with_logp(subkey, params, batchsize, True)
+    print (logp)
 
 test_logp()

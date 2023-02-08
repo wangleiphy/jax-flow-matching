@@ -129,44 +129,33 @@ def energy_fun(pos, box):
 
 def make_energy(n, dim, L):
     def energy_fn(pos):
+        '''
+        energy difference
+        '''
         box = jnp.ones((dim, )) * L
-        return lj_efunc(pos, box, jax_nblist(pos, box))
+        e1 = lj_efunc(pos, box, jax_nblist(pos, box))
+        e0 = 0 # uniform 
+        return e1 - e0
     return energy_fn
 
-def make_free_energy(batched_sampler, energy_fn, logp_fn, n, dim, L, T):
+def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
 
     kT = 8.314463e-3*T
+    print ('kBT', kT)
+    print ('F0 of uniform distributuion', -kT*n*dim*jnp.log(L))
+
     def free_energy_ub(key, params, batchsize):
-
-        x, logp = batched_sampler(key, params, batchsize)
-        x -= L * jnp.floor(x / L)
-        e = jax.vmap(energy_fn)(x.reshape(batchsize, n, dim))
-
-        #amount = jnp.exp(- beta * e - logp)
-        #z, z_err = amount.mean(), amount.std() / jnp.sqrt(x.shape[0])
-        #lnz, lnz_err = -jnp.log(z)/beta, z_err/(z*beta)
-
-        #print ('e0', energy_fun(X1[:batchsize].reshape(batchsize, n, dim)))
-        #print('e', e)
-        #print('logp', logp)
-        #print('T', T)
-        f = e + logp * kT  # variational free energy
-        #print ('f', f)
-        #beta = 1/(kT)
-        #print ('beta', beta)
-        #print ('log-normal correction', -jnp.var(beta*f)/(2*beta))
-        #import matplotlib.pyplot as plt
-        #plt.hist(f, bins=50)
-        #plt.show()
-        #return lnz, lnz_err, x, f.mean(), f.std()/jnp.sqrt(x.shape[0])
-
+        _, x1, logp = batched_sampler(key, params, batchsize, True)
+        x1 -= L * jnp.floor(x1 / L)
+        e = jax.vmap(energy_fn)(x1.reshape(batchsize, n, dim))
+        f = e + logp * kT
         return f.mean(), f.std() / jnp.sqrt(batchsize)
 
-    def free_energy_lb(key, params, x):
-        batchsize = x.shape[0]
-        x -= L * jnp.floor(x / L)
-        e = jax.vmap(energy_fn)(x.reshape(batchsize, n, dim))
-        f = e + logp_fn(params, x, key) * kT
+    def free_energy_lb(key, params, batchsize):
+        x1, _, logp = batched_sampler(key, params, batchsize, False)
+        x1 -= L * jnp.floor(x1 / L)
+        e = jax.vmap(energy_fn)(x1.reshape(batchsize, n, dim))
+        f = e + logp * kT
         return f.mean(), f.std() / jnp.sqrt(batchsize)
 
     return free_energy_ub, free_energy_lb

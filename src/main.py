@@ -29,7 +29,8 @@ group.add_argument("--fmax", type=float, default=0, help="clip force, 0 means we
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--dataset", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
+group.add_argument("--X0", default="../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
+group.add_argument("--X1", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
@@ -51,14 +52,19 @@ key = jax.random.PRNGKey(42)
 
 print("\n========== Prepare training dataset ==========")
 
-if os.path.isfile(args.dataset):
-    X1, n, dim, L, _ = utils.loaddata(args.dataset)
-    assert (X1.shape[0]% args.batchsize == 0)
-    print("Load dataset: %s" % args.dataset)
-    dataname = os.path.splitext(os.path.basename(args.dataset))[0]
-    
-    key, subkey = jax.random.split(key)
-    X0 = jax.random.uniform(subkey, X1.shape, minval=0, maxval=L)
+if os.path.isfile(args.X0) and os.path.isfile(args.X1):
+    dataname = os.path.splitext(os.path.basename(args.X0))[0]+'_' +\
+               os.path.splitext(os.path.basename(args.X1))[0]
+    print (dataname)
+
+    X1, n, dim, L, _ = utils.loaddata(args.X1)
+    X0, _, _, _, _ = utils.loaddata(args.X0)
+
+    datasize = min(X0.shape[0], X1.shape[0])
+    assert (datasize % args.batchsize == 0)
+
+    X0 = X0[:datasize]
+    X1 = X1[:datasize]
     
     def dist_fn(x0, x1):
         rij = jnp.reshape(x0, (n, dim)) - jnp.reshape(x1, (n, dim))

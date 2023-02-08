@@ -29,7 +29,8 @@ group = parser.add_argument_group('filesystem')
 group.add_argument("--restore_path", default=None, help="checkpoint path or file")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--dataset", default="../data/LJSystem_npy/liquid/traj_N32_rho0.7_T1.0.npy",help="The path to training dataset")
+group.add_argument("--X0", default="../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
+group.add_argument("--X1", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
@@ -42,7 +43,7 @@ group.add_argument("--nheads", type=int, default=8, help="")
 group.add_argument("--keysize", type=int, default=16, help="")
 group.add_argument("--h1size", type=int, default=32, help="")
 group.add_argument("--h2size", type=int, default=32, help="")
-group.add_argument("--fmax", type=float, default=1e5, help="clip force")
+group.add_argument("--fmax", type=float, default=0, help="clip force")
 
 args = parser.parse_args()
 
@@ -50,10 +51,9 @@ key = jax.random.PRNGKey(42)
 
 print("\n========== Prepare training dataset ==========")
 
-if os.path.isfile(args.dataset):
-    X1, n, dim, L, T = utils.loaddata(args.dataset)
-    X1 = jax.random.permutation(key, X1)
-    print("Load dataset: %s" % args.dataset)
+if os.path.isfile(args.X0) and os.path.isfile(args.X1):
+    X1, n, dim, L, T = utils.loaddata(args.X1)
+    X0, _, _, _, _ = utils.loaddata(args.X0)
 else:
     raise ValueError("what dataset ?")
 ####################################################################################
@@ -78,9 +78,9 @@ raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
 key, subkey = jax.random.split(key)
-sampler, sampler_with_logp, logp_fn = make_flow(vec_field_net, div_fn, n*dim, L)
+sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
 energy_fn = make_energy(n, dim, L)
-fub_fn, flb_fn = make_free_energy(sampler_with_logp, energy_fn, logp_fn, n, dim, L, T)
+fub_fn, flb_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 
@@ -109,7 +109,7 @@ plt.show()
 '''
 
 key, subkey = jax.random.split(key)
-x = sampler(subkey, params, args.batchsize)
+x = sampler(subkey, params, args.batchsize, True)
 print ('sample shape', x.shape)
 
 rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
@@ -125,10 +125,8 @@ plt.title('epoch=%g'%epoch_finished)
 plt.legend()
 plt.show()
 
-key, subkey = jax.random.split(key)
-vfe, vfe_err = fub_fn(subkey, params, args.batchsize)
-print('variational free energy upper bound: %f ± %f' %(vfe, vfe_err))
-
-subkeys = jax.random.split(key, args.batchsize)
-vfe, vfe_err = flb_fn(subkeys, params, X1[:args.batchsize])
-print('variational free energy lower bound: %f ± %f' %(vfe, vfe_err))
+key1, key2 = jax.random.split(key)
+vfe, vfe_err = fub_fn(key1, params, args.batchsize)
+print('free energy difference upper bound: %f ± %f' %(vfe, vfe_err))
+vfe, vfe_err = flb_fn(key2, params, args.batchsize)
+print('free energy difference lower bound: %f ± %f' %(vfe, vfe_err))
