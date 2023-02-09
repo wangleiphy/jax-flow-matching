@@ -96,7 +96,20 @@ def generate_energy_function(function):
 def lennard_jones_energy(r2):
     one_R2 = 1.0 / r2
     sig_R2 = one_R2 * 0.3419 * 0.3419
-    epairs = 2. * 0.2341 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
+    epairs = 2. * 0.9794744 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
+    return epairs
+
+@jax.jit
+def wca_potential_energy(r2):
+    sigma = 0.3419
+    epsilon = 0.9794744
+    cutoff = (2 ** (1/6)) * sigma
+    energy_shift = epsilon / 2
+
+    one_R2 = 1.0 / r2
+    sig_R2 = one_R2 * sigma * sigma
+    epairs = (2. * epsilon * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3)) + energy_shift) * (r2 <= cutoff ** 2)
+
     return epairs
 
 
