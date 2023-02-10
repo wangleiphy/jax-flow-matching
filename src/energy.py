@@ -158,6 +158,6 @@ def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
         e = jax.vmap(energy_fn)(x0.reshape(batchsize, n, dim),
                                 x1.reshape(batchsize, n, dim))
         f = e + logp * kT
-        return f.mean(), f.std() / jnp.sqrt(batchsize)
+        return f.mean(), f.std() / jnp.sqrt(batchsize), f 
 
     return free_energy_bound

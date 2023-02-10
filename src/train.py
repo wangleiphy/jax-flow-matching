@@ -65,8 +65,8 @@ def train(key, value_and_grad, free_energy_fn, nepoch, batchsize, params, X0, X1
             print("Save checkpoint file: %s" % ckpt_filename)
 
             key, subkey1, subkey2 = jax.random.split(key,3)
-            fe_ub, fe_ub_err = free_energy_fn(subkey1, state.params, batchsize, 1)
-            fe_lb, fe_lb_err = free_energy_fn(subkey2, state.params, batchsize, -1)
+            fe_ub, fe_ub_err, _ = free_energy_fn(subkey1, state.params, batchsize, 1)
+            fe_lb, fe_lb_err, _ = free_energy_fn(subkey2, state.params, batchsize, -1)
             g.write( ("%6d" + "  %.6f"*4 + "\n") % (epoch, fe_lb, fe_lb_err, fe_ub, fe_ub_err))
 
     f.close()
