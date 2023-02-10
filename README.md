@@ -1,7 +1,7 @@
 
 train
 ```bash 
-python ../src/main.py --folder ../data/ --nlayers 4 --h1size 256 --h2size 64 --keysize 16 --nheads 8 --lr 0.001 --batchsize 100 --ferminet
+python ../src/main.py --folder /data/wanglei/lj/force-unclip-paired-hungarian-L-wca-lj/ --nlayers 4 --h1size 256 --h2size 64 --keysize 16 --nheads 8 --lr 0.001 --fmax 0.0 --batchsize 1000 --X0 ../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz --X1 ../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz --ferminet  --permute  
 ```
 
 inference 

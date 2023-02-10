@@ -14,10 +14,11 @@ keysize = 16
 batchsize = 1000
 lr = 1e-3
 fmax = 0.0
+permute = True
 
-#dataset = '../data/position.dat'
 X0 = '../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz'
 X1 = '../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz'
+
 #dataset = '../data/LJSystem_npz/fcc/traj_N32_rho1.1_T1.1.npz'
 #dataset = '../data/LJSystem_npz/liquid/traj_N108_rho0.7_T1.0.npz'
 

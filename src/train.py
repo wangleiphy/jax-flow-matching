@@ -12,7 +12,7 @@ class TrainingState(NamedTuple):
     params: hk.Params
     opt_state: optax.OptState
 
-def train(key, value_and_grad, nepoch, batchsize, params, X0, X1, lr, path, L):
+def train(key, value_and_grad, free_energy_fn, nepoch, batchsize, params, X0, X1, lr, path, L):
 
     assert (len(X1)%batchsize==0)
 
@@ -32,8 +32,8 @@ def train(key, value_and_grad, nepoch, batchsize, params, X0, X1, lr, path, L):
     init_opt_state = optimizer.init(params)
     state = TrainingState(params, init_opt_state)
 
-    log_filename = os.path.join(path, "loss.txt")
-    f = open(log_filename, "w", buffering=1, newline="\n")
+    f = open(os.path.join(path, "loss.txt"), "w", buffering=1, newline="\n")
+    g = open(os.path.join(path, "fe.txt"), "w", buffering=1, newline="\n")
     itercount = itertools.count()
     for epoch in range(1, nepoch+1):
         key, subkey = jax.random.split(key)
@@ -64,7 +64,13 @@ def train(key, value_and_grad, nepoch, batchsize, params, X0, X1, lr, path, L):
             checkpoint.save_data(ckpt, ckpt_filename)
             print("Save checkpoint file: %s" % ckpt_filename)
 
+            key, subkey1, subkey2 = jax.random.split(key,3)
+            fe_ub, fe_ub_err = free_energy_fn(subkey1, state.params, batchsize, 1)
+            fe_lb, fe_lb_err = free_energy_fn(subkey2, state.params, batchsize, -1)
+            g.write( ("%6d" + "  %.6f"*4 + "\n") % (epoch, fe_lb, fe_lb_err, fe_ub, fe_ub_err))
+
     f.close()
+    g.close()
     return state.params
 
 def train2(key, value_and_grad, nepoch, batchsize, params, data, lr, path, L):

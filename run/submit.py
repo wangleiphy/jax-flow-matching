@@ -47,6 +47,8 @@ if __name__=='__main__':
                         'X1':X1
                         }
                 args[model] = ''
+                if permute:
+                    args['permute'] = ''
  
                 logname = jobdir
                 for key, val in args.items():

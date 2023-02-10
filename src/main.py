@@ -7,14 +7,14 @@ import numpy as np
 from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
-from energy import make_energy
+from energy import make_energy, make_free_energy
+from flow import make_flow 
 from loss import make_loss
 from train import train
 from hungarian import matching
 import utils
 
 import argparse
-import time
 import os
 
 ####################################################################################
@@ -31,6 +31,7 @@ group.add_argument("--folder", default="../data/", help="The folder to save data
 group = parser.add_argument_group("datasets")
 group.add_argument("--X0", default="../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
 group.add_argument("--X1", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
+group.add_argument("--permute", action="store_true", help="permute particle")
 
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("--hollow", action="store_true", help="Use hollownet")
@@ -57,8 +58,12 @@ if os.path.isfile(args.X0) and os.path.isfile(args.X1):
                os.path.splitext(os.path.basename(args.X1))[0]
     print (dataname)
 
-    X1, n, dim, L, _ = utils.loaddata(args.X1)
+    X1, n, dim, L, T = utils.loaddata(args.X1)
     X0, _, _, _, _ = utils.loaddata(args.X0)
+    
+    key, subkey1, subkey2 = jax.random.split(key, 3)
+    X0 = jax.random.permutation(subkey1, X0)
+    X1 = jax.random.permutation(subkey2, X1)
 
     datasize = min(X0.shape[0], X1.shape[0])
     assert (datasize % args.batchsize == 0)
@@ -72,12 +77,14 @@ if os.path.isfile(args.X0) and os.path.isfile(args.X1):
         r = jnp.linalg.norm(rij, axis=-1) #(n, )
         return r*r
 
-    print ('total dist before:', jax.vmap(dist_fn)(X0, X1).sum())
-    from tqdm import tqdm
-    for b in tqdm(range(len(X0))):
-        _, x1 = matching(X0[b].reshape(n, dim), X1[b].reshape(n, dim), L)
-        X1 = X1.at[b].set( jnp.reshape(x1, (n*dim, )))
-    print ('total dist after:', jax.vmap(dist_fn)(X0, X1).sum())
+    print ('total dist:', jax.vmap(dist_fn)(X0, X1).sum())
+    if args.permute:
+        dataname += '_permute'
+        from tqdm import tqdm
+        for b in tqdm(range(len(X0))):
+            _, x1 = matching(X0[b].reshape(n, dim), X1[b].reshape(n, dim), L)
+            X1 = X1.at[b].set( jnp.reshape(x1, (n*dim, )))
+        print ('total dist after permute:', jax.vmap(dist_fn)(X0, X1).sum())
 
 else:
     raise ValueError("what dataset ?")
@@ -87,21 +94,25 @@ key, subkey = jax.random.split(key)
 
 if args.transformer:
     print("\n========== Construct transformer ==========")
-    params, vec_field_net, _ = make_transformer(subkey, n, dim, args.nheads, args.nlayers, args.keysize, L)
+    params, vec_field_net, div_fn = make_transformer(subkey, n, dim, args.nheads, args.nlayers, args.keysize, L)
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, _ = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, args.fmax)
+    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, args.fmax)
     modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
-    params, vec_field_net, _ = make_hollow_net(subkey, n, dim, L, args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
+    params, vec_field_net, div_fn = make_hollow_net(subkey, n, dim, L, args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
     modelname = "hollownet_nh_%d_k_%d_h1_%d_h2_%d_l_%d" % (args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
 else:
     raise ValueError("what model ?")
 
 raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
+
+sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
+energy_fn = make_energy(n, dim, L)
+free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 loss = make_loss(vec_field_net, L)
 value_and_grad = jax.value_and_grad(loss)
@@ -119,10 +130,6 @@ print("Create directory: %s" % path)
 
 print("\n========== Train ==========")
 
-start = time.time()
-params = train(key, value_and_grad, args.epochs, args.batchsize, params, X0, X1, args.lr, path, L)
-end = time.time()
-running_time = end - start
-print("training time: %.5f sec" %running_time)
+params = train(key, value_and_grad, free_energy_fn, args.epochs, args.batchsize, params, X0, X1, args.lr, path, L)
 
 ####################################################################################

@@ -77,7 +77,6 @@ else:
 raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
-key, subkey = jax.random.split(key)
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
 energy_fn = make_energy(n, dim, L)
 free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
