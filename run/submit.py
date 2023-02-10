@@ -43,14 +43,15 @@ if __name__=='__main__':
                         'lr':lr, 
                         'fmax':fmax,
                         'batchsize': batchsize,
-                        'dataset':dataset
+                        'X0':X0,
+                        'X1':X1
                         }
                 args[model] = ''
  
                 logname = jobdir
                 for key, val in args.items():
                     if key != 'folder':
-                        if key == 'dataset':
+                        if key in ['X0', 'X1']:
                             key = ''
                             val = os.path.splitext(os.path.basename(val))[0]
                         k = str(key)

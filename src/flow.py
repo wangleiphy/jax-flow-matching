@@ -41,24 +41,28 @@ def make_flow(vec_field_net, div_fn, X0, X1, mxstep=1000):
                  rtol=1e-10, atol=1e-10,
                  mxstep=mxstep
                  )
-        return xt[0], xt[1], sign*logpt[-1]
+        if sign > 0:
+            x0, x1 = xt[0], xt[1]
+        else:
+            x0, x1 = xt[1], xt[0]
+        return x0, x1, sign*logpt[-1]
 
-    @partial(jax.jit, static_argnums=(2,3))
-    def sample_and_logp_fn(key, params, batchsize, forward):
+    @partial(jax.jit, static_argnums=(2, 3))
+    def sample_and_logp_fn(key, params, batchsize, sign):
         key1, key2 = jax.random.split(key)
-        if forward:
+        if sign>0:
             x = sample_x0(key1, batchsize)
         else:
             x = sample_x1(key1, batchsize)
         v = jax.random.normal(key2, x.shape)
-        return integrate_with_logp(params, x, v, 1 if forward else -1)
+        return integrate_with_logp(params, x, v, sign)
 
-    @partial(jax.jit, static_argnums=(2, 3))
-    def sample_fn(key, params, batchsize, forward):
-        if forward:
+    @partial(jax.jit, static_argnums=(2,3))
+    def sample_fn(key, params, batchsize, sign):
+        if sign >0:
             x = sample_x0(key, batchsize)
         else:
             x = sample_x1(key, batchsize)
-        return integrate(params, x, 1 if forward else -1)
+        return integrate(params, x, sign)
 
     return sample_fn, sample_and_logp_fn

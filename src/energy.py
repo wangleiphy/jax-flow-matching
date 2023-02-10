@@ -91,16 +91,28 @@ def generate_energy_function(function):
 
     return energy_function
 
-
 @jax.jit
 def lennard_jones_energy(r2):
     one_R2 = 1.0 / r2
     sig_R2 = one_R2 * 0.3419 * 0.3419
-    epairs = 2. * 0.2341 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
+    epairs = 2. * 0.9794744 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
     return epairs
 
+@jax.jit
+def wca_potential_energy(r2):
+    sigma = 0.3419
+    epsilon = 0.9794744
+    cutoff = (2 ** (1/6)) * sigma
+    energy_shift = epsilon / 2
+
+    one_R2 = 1.0 / r2
+    sig_R2 = one_R2 * sigma * sigma
+    epairs = (2. * epsilon * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3)) + energy_shift) * (r2 <= cutoff ** 2)
+
+    return epairs
 
 lj_efunc = generate_energy_function(lennard_jones_energy)
+wca_efunc = generate_energy_function(wca_potential_energy)
 
 
 def jax_nblist(pos, box):
@@ -121,20 +133,11 @@ def _jax_nblist_jvp(primals, tangents):
     grad = jnp.zeros(val.shape, dtype=np.int64)
     return val, grad
 
-
-@jax.jit
-def energy_fun(pos, box):
-    return lj_efunc(pos, box, jax_nblist(pos, box))
-
-
 def make_energy(n, dim, L):
-    def energy_fn(pos):
-        '''
-        energy difference
-        '''
+    def energy_fn(x0, x1):
         box = jnp.ones((dim, )) * L
-        e1 = lj_efunc(pos, box, jax_nblist(pos, box))
-        e0 = 0 # uniform 
+        e0 = wca_efunc(x0, box, jax_nblist(x0, box))
+        e1 = lj_efunc(x1, box, jax_nblist(x1, box))
         return e1 - e0
     return energy_fn
 
@@ -142,37 +145,19 @@ def make_free_energy(batched_sampler, energy_fn, n, dim, L, T):
 
     kT = 8.314463e-3*T
     print ('kBT', kT)
-    print ('F0 of uniform distributuion', -kT*n*dim*jnp.log(L))
-
-    def free_energy_ub(key, params, batchsize):
-        _, x1, logp = batched_sampler(key, params, batchsize, True)
-        x1 -= L * jnp.floor(x1 / L)
-        e = jax.vmap(energy_fn)(x1.reshape(batchsize, n, dim))
-        f = e + logp * kT
-        return f.mean(), f.std() / jnp.sqrt(batchsize)
-
-    def free_energy_lb(key, params, batchsize):
-        x1, _, logp = batched_sampler(key, params, batchsize, False)
-        x1 -= L * jnp.floor(x1 / L)
-        e = jax.vmap(energy_fn)(x1.reshape(batchsize, n, dim))
-        f = e + logp * kT
-        return f.mean(), f.std() / jnp.sqrt(batchsize)
-
-    return free_energy_ub, free_energy_lb
-
-
-if __name__ == '__main__':
-    jax.config.update("jax_enable_x64", True)
-    L = 1.234
-    n = 32
-    dim = 3
-    key = jax.random.PRNGKey(42)
     
-    energy_fn = make_energy(n, dim, L)
-    force_fn = jax.grad(energy_fn)
+    @partial(jax.jit, static_argnums=(2, 3))
+    def free_energy_bound(key, params, batchsize, sign):
+        '''
+        upper bound sign = 1
+        lower bound sign = -1
+        '''
+        x0, x1, logp = batched_sampler(key, params, batchsize, sign)
+        x0 -= L * jnp.floor(x0 / L)
+        x1 -= L * jnp.floor(x1 / L)
+        e = jax.vmap(energy_fn)(x0.reshape(batchsize, n, dim),
+                                x1.reshape(batchsize, n, dim))
+        f = e + logp * kT
+        return f.mean(), f.std() / jnp.sqrt(batchsize)
 
-    pos = jax.random.uniform(key, (10, n, dim), minval=0, maxval=L)
-
-    e = jax.vmap(energy_fn)(pos)
-    print(e)
-    print (jax.vmap(force_fn)(pos))
+    return free_energy_bound

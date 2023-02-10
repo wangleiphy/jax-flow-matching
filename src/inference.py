@@ -80,7 +80,7 @@ print("# of params: %d" % raveled_params.size)
 key, subkey = jax.random.split(key)
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
 energy_fn = make_energy(n, dim, L)
-fub_fn, flb_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
+free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 
@@ -126,7 +126,7 @@ plt.legend()
 plt.show()
 
 key1, key2 = jax.random.split(key)
-vfe, vfe_err = fub_fn(key1, params, args.batchsize)
+vfe, vfe_err = free_energy_fn(key1, params, args.batchsize, 1)
 print('free energy difference upper bound: %f ± %f' %(vfe, vfe_err))
-vfe, vfe_err = flb_fn(key2, params, args.batchsize)
+vfe, vfe_err = free_energy_fn(key2, params, args.batchsize, -1)
 print('free energy difference lower bound: %f ± %f' %(vfe, vfe_err))
