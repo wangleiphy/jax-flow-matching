@@ -52,7 +52,10 @@ print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.X0) and os.path.isfile(args.X1):
     X1, n, dim, L, _ = utils.loaddata(args.X1)
-    X0, _, _, _, _ = utils.loaddata(args.X0)
+    #X0, _, _, _, _ = utils.loaddata(args.X0)
+
+    key, subkey = jax.random.split(key)
+    X0 = jax.random.uniform(subkey, X1.shape, minval=0, maxval=L)
 
     X0 = X0.reshape(-1, n*dim)
     X1 = X1.reshape(-1, n*dim)
@@ -115,7 +118,8 @@ rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
 print ('data shape', X1.shape)
 plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
 
-for t in [0,  x.shape[1]-1]:
+#for t in [0,  x.shape[1]-1]:
+for t in range(x.shape[1]):
     rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
     plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
              label='model@t=%g'%(t/(x.shape[1]-1)),
@@ -124,4 +128,8 @@ for t in [0,  x.shape[1]-1]:
              )
 plt.title('epoch=%g'%epoch_finished)
 plt.legend()
+
+fig_filename = os.path.join(folder, "epoch_%06d.png" %(epoch_finished))
+plt.savefig(fig_filename)
+
 plt.show()

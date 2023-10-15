@@ -35,7 +35,10 @@ def make_pairwise_potential(L):
         epairs = 2. * 0.2341 * (jnp.power(sig_R2, 6) - jnp.power(sig_R2, 3))
         return epairs
 
-    f = _lj
+    def _jastrow(r):
+        return (2.4/r)**6
+
+    f = _jastrow
     v = lambda r: (f(r) + f(L-r) - 2*f(L/2))*(r<=L/2) + 0.0*(r>L/2)
 
     def energy_fn(x):

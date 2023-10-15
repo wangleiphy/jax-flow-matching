@@ -58,7 +58,10 @@ if os.path.isfile(args.X0) and os.path.isfile(args.X1):
     print (dataname)
 
     X1, n, dim, L, _ = utils.loaddata(args.X1)
-    X0, _, _, _, _ = utils.loaddata(args.X0)
+    #X0, _, _, _, _ = utils.loaddata(args.X0)
+    
+    key, subkey = jax.random.split(key)
+    X0 = jax.random.uniform(subkey, X1.shape, minval=0, maxval=L)
     
     key, subkey1, subkey2 = jax.random.split(key, 3)
     X0 = jax.random.permutation(subkey1, X0)
