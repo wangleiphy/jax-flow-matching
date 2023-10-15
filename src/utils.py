@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy as np 
+import pickle
 
 def get_gr(x, L, bins=100): 
     batchsize, n, dim = x.shape[0], x.shape[1], x.shape[2]
@@ -81,26 +82,36 @@ def divergence_fori(f):
         return jax.lax.fori_loop(0, n, _body_fun, 0.0)
     return _div_f
 
-def loaddata(dataset):
+def loaddata(filename):
+    n = 14
+    dim = 3
+    dens = 0.016355 
+    L = (n/dens)**(1/3)
 
-    data = jnp.load(dataset)
-    X1 = data['positions']
-    cell = data['cell_vectors']
-    assert (cell[0,0] == cell[1,1] == cell[2,2])
-    L = cell[0,0]
-    T = data['T']
-    n, dim = X1.shape[1], X1.shape[2]
-    X1 = X1.reshape(-1, n*dim)
-    assert (n == data['N'])
+    with open(filename, "rb") as f:
+        data = pickle.load(f)
 
-    #data = np.loadtxt(args.dataset)
-    #datasize, n, dim = 1000, 64, 3
-    #L = data[-1, -1]
-    #X1 = data[:, :-3]
-    #X1 = X1.reshape(datasize, n*dim)
+    X1 = data['x_step']
+    X1 = X1.reshape(-1, n, dim)
+    X1 = X1[:, :n//2, :] # only take spin up
 
     print (X1.shape, L)
-    print (jnp.min(X1), jnp.max(X1))
     X1 -= L * jnp.floor(X1/L)
     
-    return X1, n, dim, L, T
+    return X1, n//2, dim, L, 0.0
+
+if __name__=='__main__':
+    filename = "/data/zhangqidata/TestHelium3Flow/Helium3FreeFermions_n_14/epoch_000400.pkl"
+    #filename = "/data/zhangqidata/TestHelium3Flow/Helium3Jastrow_n_14/epoch_004000.pkl"
+
+    x, n, dim, L, _  = loaddata(filename)
+
+    print (x.shape) 
+    print (n, dim, L)
+
+    rmesh, gr = get_gr(x, L, bins=100)
+
+    import matplotlib.pyplot as plt
+    plt.plot(rmesh, gr)
+    plt.show()
+

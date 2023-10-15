@@ -8,7 +8,6 @@ from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
 
-from energy import make_energy, make_free_energy
 from flow import make_flow 
 from loss import make_loss
 import checkpoint
@@ -52,8 +51,11 @@ key = jax.random.PRNGKey(42)
 print("\n========== Prepare training dataset ==========")
 
 if os.path.isfile(args.X0) and os.path.isfile(args.X1):
-    X1, n, dim, L, T = utils.loaddata(args.X1)
+    X1, n, dim, L, _ = utils.loaddata(args.X1)
     X0, _, _, _, _ = utils.loaddata(args.X0)
+
+    X0 = X0.reshape(-1, n*dim)
+    X1 = X1.reshape(-1, n*dim)
 else:
     raise ValueError("what dataset ?")
 ####################################################################################
@@ -78,8 +80,6 @@ raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
-energy_fn = make_energy(n, dim, L)
-free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 print("\n========== Prepare logs ==========")
 
@@ -114,23 +114,14 @@ print ('sample shape', x.shape)
 rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
 print ('data shape', X1.shape)
 plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
-for t in range(x.shape[1]):
+
+for t in [0,  x.shape[1]-1]:
     rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
     plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
              label='model@t=%g'%(t/(x.shape[1]-1)),
-             alpha= (t/(x.shape[1]-1) + 0.1)/1.1, c='red'
+             alpha= (t/(x.shape[1]-1) + 0.1)/1.1, 
+             c='red', 
              )
 plt.title('epoch=%g'%epoch_finished)
-plt.legend()
-plt.show()
-
-key1, key2 = jax.random.split(key)
-vfe, vfe_err, f_fwd = free_energy_fn(key1, params, args.batchsize, 1)
-print('free energy difference upper bound: %f ± %f' %(vfe, vfe_err))
-vfe, vfe_err, f_bak = free_energy_fn(key2, params, args.batchsize, -1)
-print('free energy difference lower bound: %f ± %f' %(vfe, vfe_err))
-
-plt.hist(f_fwd, bins=50, alpha=0.5, label='forward')
-plt.hist(f_bak, bins=50, alpha=0.5, label='backward')
 plt.legend()
 plt.show()

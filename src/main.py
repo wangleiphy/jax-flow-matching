@@ -7,7 +7,6 @@ import numpy as np
 from transformer import make_transformer
 from ferminet import make_ferminet 
 from hollow import make_hollow_net 
-from energy import make_energy, make_free_energy
 from flow import make_flow 
 from loss import make_loss
 from train import train
@@ -29,8 +28,8 @@ group.add_argument("--fmax", type=float, default=0, help="clip force, 0 means we
 group.add_argument("--folder", default="../data/", help="The folder to save data")
 
 group = parser.add_argument_group("datasets")
-group.add_argument("--X0", default="../data/LJTraj_WCA/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
-group.add_argument("--X1", default="../data/LJSystem_npz/liquid/traj_N32_rho0.7_T1.0.npz",help="The path to training dataset")
+group.add_argument("--X0", default="/data/zhangqidata/TestHelium3Flow/Helium3FreeFermions_n_14/epoch_000400.pkl",help="The path to training dataset")
+group.add_argument("--X1", default="/data/zhangqidata/TestHelium3Flow/Helium3Jastrow_n_14/epoch_004000.pkl",help="The path to training dataset")
 group.add_argument("--permute", action="store_true", help="permute particle")
 
 group = parser.add_mutually_exclusive_group(required=True)
@@ -58,7 +57,7 @@ if os.path.isfile(args.X0) and os.path.isfile(args.X1):
                os.path.splitext(os.path.basename(args.X1))[0]
     print (dataname)
 
-    X1, n, dim, L, T = utils.loaddata(args.X1)
+    X1, n, dim, L, _ = utils.loaddata(args.X1)
     X0, _, _, _, _ = utils.loaddata(args.X0)
     
     key, subkey1, subkey2 = jax.random.split(key, 3)
@@ -68,8 +67,8 @@ if os.path.isfile(args.X0) and os.path.isfile(args.X1):
     datasize = min(X0.shape[0], X1.shape[0])
     assert (datasize % args.batchsize == 0)
 
-    X0 = X0[:datasize]
-    X1 = X1[:datasize]
+    X0 = X0[:datasize].reshape(-1, n*dim)
+    X1 = X1[:datasize].reshape(-1, n*dim)
     
     def dist_fn(x0, x1):
         rij = jnp.reshape(x0, (n, dim)) - jnp.reshape(x1, (n, dim))
@@ -111,8 +110,6 @@ raveled_params, _ = ravel_pytree(params)
 print("# of params: %d" % raveled_params.size)
 
 sampler, sampler_with_logp = make_flow(vec_field_net, div_fn, X0, X1)
-energy_fn = make_energy(n, dim, L)
-free_energy_fn = make_free_energy(sampler_with_logp, energy_fn, n, dim, L, T)
 
 loss = make_loss(vec_field_net, L)
 value_and_grad = jax.value_and_grad(loss)
@@ -130,6 +127,6 @@ print("Create directory: %s" % path)
 
 print("\n========== Train ==========")
 
-params = train(key, value_and_grad, free_energy_fn, args.epochs, args.batchsize, params, X0, X1, args.lr, path, L)
+params = train(key, value_and_grad, args.epochs, args.batchsize, params, X0, X1, args.lr, path, L)
 
 ####################################################################################
