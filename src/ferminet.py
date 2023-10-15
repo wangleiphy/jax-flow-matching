@@ -38,7 +38,9 @@ class FermiNet(hk.Module):
         #|r| calculated with periodic consideration
         r = jnp.linalg.norm(jnp.sin(np.pi*rij/self.L)+jnp.eye(n)[..., None], axis=-1)*(1.0-jnp.eye(n))
         
-        f = [r[..., None]]
+        f = []
+        for n in range(1, self.Nf+1):
+            f += [r[..., None]**n]
         for n in range(1, self.Nf+1):
             f += [jnp.cos(2*np.pi*rij/self.L*n), jnp.sin(2*np.pi*rij/self.L*n)]
         return jnp.concatenate(f, axis=-1)
@@ -95,12 +97,12 @@ class FermiNet(hk.Module):
             force = jnp.clip(force, a_min = -self.fmax, a_max = self.fmax)
             return alpha[:, :dim] - jnp.exp(alpha[:, dim:])*force
 
-def make_ferminet(key, n, dim, depth, h1size, h2size, L, fmax):
+def make_ferminet(key, n, dim, depth, h1size, h2size, Nf, L, fmax):
     x = jax.random.uniform(key, (n, dim), minval=0, maxval=L)
     t = jax.random.uniform(key)
 
     def forward_fn(x, t):
-        net = FermiNet(depth, h1size, h2size, 5, L, fmax)
+        net = FermiNet(depth, h1size, h2size, Nf, L, fmax)
         return net(x.reshape(n, dim), t).reshape(n*dim)
     network = hk.without_apply_rng(hk.transform(forward_fn))
     params = network.init(key, x, t)

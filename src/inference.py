@@ -43,6 +43,7 @@ group.add_argument("--keysize", type=int, default=16, help="")
 group.add_argument("--h1size", type=int, default=32, help="")
 group.add_argument("--h2size", type=int, default=32, help="")
 group.add_argument("--fmax", type=float, default=0, help="clip force")
+group.add_argument("--Nf", type=int, default=1, help="")
 
 args = parser.parse_args()
 
@@ -70,8 +71,8 @@ if args.transformer:
     modelname = "transformer_l_%d_h_%d_k_%d" % (args.nlayers, args.nheads, args.keysize)
 elif args.ferminet:
     print("\n========== Construct ferminet ==========")
-    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, L, args.fmax)
-    modelname = "ferminet_l_%d_h1_%d_h2_%d" % (args.nlayers, args.h1size, args.h2size)
+    params, vec_field_net, div_fn = make_ferminet(subkey, n, dim, args.nlayers, args.h1size, args.h2size, args.Nf, L, args.fmax)
+    modelname = "ferminet_l_%d_Nf_%d_h1_%d_h2_%d" % (args.nlayers, args.Nf, args.h1size, args.h2size)
 elif args.hollow:
     print("\n========== Construct hollownet ==========")
     params, vec_field_net, div_fn = make_hollow_net(subkey, n, dim, L, args.nheads, args.keysize, args.h1size, args.h2size, args.nlayers)
@@ -118,8 +119,8 @@ rdf_data = utils.get_gr(X1.reshape(-1, n, dim), L)
 print ('data shape', X1.shape)
 plt.plot(rdf_data[0], rdf_data[1], linestyle='-', c='blue', label='data')
 
-#for t in [0,  x.shape[1]-1]:
-for t in range(x.shape[1]):
+for t in [0,  x.shape[1]-1]:
+#for t in range(x.shape[1]):
     rdf_model = utils.get_gr(x[:, t, :].reshape(-1, n, dim), L)
     plt.plot(rdf_model[0], rdf_model[1], linestyle='-', 
              label='model@t=%g'%(t/(x.shape[1]-1)),
